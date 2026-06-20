@@ -52,11 +52,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         .sidebar { position: fixed; z-index: 30; inset: 0 auto 0 0; width: 250px; background: #fff; border-right: 1px solid #e4e9e5; display: flex; flex-direction: column; }
         .dashboard-main { margin-left: 250px; min-height: 100vh; }
         .nav-label { color: #9aa39d; padding: 0 10px 8px; font-size: 10px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
-        .nav-link { display: flex; align-items: center; gap: 11px; min-height: 43px; padding: 0 12px; border-radius: 10px; color: #5d6861; font-size: 14px; font-weight: 680; margin-bottom: 4px; }
+        .nav-link { display: flex; align-items: center; gap: 11px; min-height: 43px; padding: 0 12px; border-radius: 5px; color: #5d6861; font-size: 14px; font-weight: 680; margin-bottom: 4px; }
         .nav-link:hover { background: #f4f7f5; color: #243128; }
         .nav-active { background: #F6F6F6 !important; color: #2C645B !important; }
-        .business-chip { display: grid; grid-template-columns: 35px 1fr auto; gap: 10px; align-items: center; border: 1px solid #e4e9e5; border-radius: 12px; padding: 10px; }
-        .business-avatar { width: 35px; height: 35px; border-radius: 9px; display: grid; place-items: center; color: white; background: #2C645B; font-weight: 800; }
+        .business-chip { display: grid; grid-template-columns: 35px 1fr auto; gap: 10px; align-items: center; border: 1px solid #e4e9e5; border-radius: 5px; padding: 10px; }
+        .business-avatar { width: 35px; height: 35px; border-radius: 5px; display: grid; place-items: center; color: white; background: #2C645B; font-weight: 800; }
         .business-chip strong, .business-chip span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .business-chip strong { font-size: 12px; } .business-chip span { color: #7a857e; font-size: 10px; margin-top: 3px; text-transform: capitalize; }
         .mobile-header { display: none; }
