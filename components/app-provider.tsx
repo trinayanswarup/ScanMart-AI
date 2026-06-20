@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { initialState } from "@/lib/seed";
@@ -18,6 +18,7 @@ interface AppContextValue {
   clearCart: () => void;
   placeOrder: (customer: Checkout) => string;
   updateOrderStatus: (id: string, status: Order["status"]) => { ok: boolean; message?: string };
+  approveWorkflowExecution: (executionId: string) => { ok: boolean; message: string };
   updateBusiness: (business: Partial<Business>) => void;
   resetDemo: () => void;
 }
@@ -143,10 +144,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return response;
   }, []);
 
+  const approveWorkflowExecution = useCallback((executionId: string) => {
+    const execution = state.executions.find((entry) => entry.id === executionId);
+    if (!execution) return { ok: false, message: "Execution not found." };
+    if (execution.status !== "waiting_for_human") return { ok: false, message: "This execution is not waiting for approval." };
+
+    const approvalNode = execution.nodes.find((node) => node.status === "waiting_for_human");
+    const listingId = typeof approvalNode?.input.listingId === "string" ? approvalNode.input.listingId : undefined;
+    const listing = state.listings.find((entry) => entry.id === listingId);
+    if (!approvalNode || !listing) return { ok: false, message: "The draft listing linked to this approval could not be found." };
+    if (listing.price <= 0) return { ok: false, message: "Set a product price before approving this listing." };
+
+    const approvedAt = new Date().toISOString();
+    setState((current) => ({
+      ...current,
+      listings: current.listings.map((entry) => entry.id === listing.id ? { ...entry, isPublished: true } : entry),
+      executions: current.executions.map((entry) => entry.id === executionId ? {
+        ...entry,
+        status: "success",
+        nodes: entry.nodes.map((node) => node.id === approvalNode.id ? {
+          ...node,
+          nodeName: "Seller approved and published listing",
+          status: "success",
+          output: { listingId: listing.id, published: true, approvedAt },
+          timestamp: approvedAt,
+        } : node),
+      } : entry),
+    }));
+    return { ok: true, message: "Listing approved, published, and workflow completed." };
+  }, [state.executions, state.listings]);
   const updateBusiness = useCallback((business: Partial<Business>) => setState((current) => ({ ...current, business: { ...current.business, ...business } })), []);
   const resetDemo = useCallback(() => setState(structuredClone(initialState)), []);
 
-  const value = useMemo(() => ({ state, hydrated, addInventory, updateInventory, publishItem, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, updateBusiness, resetDemo }), [state, hydrated, addInventory, updateInventory, publishItem, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, updateBusiness, resetDemo]);
+  const value = useMemo(() => ({ state, hydrated, addInventory, updateInventory, publishItem, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo }), [state, hydrated, addInventory, updateInventory, publishItem, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo]);
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
