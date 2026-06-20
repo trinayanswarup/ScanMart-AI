@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "@fontsource-variable/manrope";
 import "./globals.css";
 import { AppProvider } from "@/components/app-provider";
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body><AppProvider>{children}</AppProvider></body>
+      <body suppressHydrationWarning><AppProvider>{children}</AppProvider></body>
     </html>
   );
 }
