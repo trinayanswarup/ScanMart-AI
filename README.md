@@ -1,4 +1,4 @@
-﻿# ScanMart AI
+# ScanMart AI
 
 **Turn physical stock into inventory, storefronts, and automated workflows.**
 
@@ -74,7 +74,7 @@ AI_PROVIDER=mock
 GEMINI_API_KEY=
 ```
 
-`AI_PROVIDER=mock` is the default and requires no external service. The mock recognizes shampoo, coffee, milk, biscuit/Parle, toothpaste, and wax from entered text or an uploaded filename.
+`AI_PROVIDER=mock` is the default and requires no external service. Local OCR reads visible product labels, then a deterministic parser extracts known products and falls back to general brand, category, and product-name heuristics.
 
 ## Database
 

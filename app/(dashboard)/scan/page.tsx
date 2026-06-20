@@ -7,6 +7,24 @@ import { useApp } from "@/components/app-provider";
 import { confidenceLabel, mockExtractProduct } from "@/lib/ai";
 import { templates } from "@/lib/seed";
 import type { ProductAIExtraction } from "@/types";
+async function prepareImageForOcr(file: File): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxDimension = 2000;
+    const scale = Math.min(2, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+    context.filter = "grayscale(1) contrast(1.45)";
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    return await new Promise<Blob>((resolve) => canvas.toBlob((blob) => resolve(blob ?? file), "image/jpeg", 0.94));
+  } catch {
+    return file;
+  }
+}
 
 export default function ScanPage() {
   const { state, addInventory } = useApp();
@@ -96,7 +114,7 @@ export default function ScanPage() {
     }
 
     const extracted = mockExtractProduct(
-      `${file?.name ?? ""} ${detectedLabel} ${text}`,
+      { ocrText: detectedLabel, filename: file?.name, userText: text },
       state.business.businessType,
     );
     setOriginal(extracted);
@@ -125,7 +143,7 @@ export default function ScanPage() {
       {!camera && <div className="capture-options"><button className="btn btn-secondary" onClick={() => inputRef.current?.click()}><FileImage size={16} />Upload photo</button><button className="btn btn-secondary" onClick={openCamera}><Video size={16} />Use webcam</button><label className="btn btn-secondary" style={{ cursor: "pointer" }}><Camera size={16} />Take photo on phone<input type="file" accept="image/*" capture="environment" hidden onChange={onFile} /></label></div>}
       {cameraError && <div className="error-text">{cameraError}</div>}
     </section>
-    <aside className="card" style={{ padding: 24 }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><div className="empty-icon" style={{ margin: 0, width: 40, height: 40, background: "#F6F6F6", color: "#A4B4CC" }}><Type size={18} /></div><div><h2 className="section-title">Label text fallback</h2><span className="muted" style={{ fontSize: 11 }}>Useful on a monitor without a camera</span></div></div><p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: "18px 0 10px" }}>Type anything visible on the package. In demo mode, keywords drive the extraction.</p><textarea className="textarea" style={{ minHeight: 130 }} value={text} onChange={(e) => setText(e.target.value)} placeholder={'Try “Dove shampoo 500ml” or “Parle-G biscuits”'} /><div className="subtle-card" style={{ padding: 13, marginTop: 13, fontSize: 11, lineHeight: 1.55, color: "#66736b" }}><strong style={{ color: "#28352c" }}>Demo tip:</strong> Try shampoo, coffee, milk, biscuit, toothpaste, or wax.</div></aside></div>
+    <aside className="card" style={{ padding: 24 }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><div className="empty-icon" style={{ margin: 0, width: 40, height: 40, background: "#F6F6F6", color: "#A4B4CC" }}><Type size={18} /></div><div><h2 className="section-title">Label text fallback</h2><span className="muted" style={{ fontSize: 11 }}>Useful on a monitor without a camera</span></div></div><p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: "18px 0 10px" }}>Type anything visible on the package. OCR reads visible label text and the local parser turns it into structured product data.</p><textarea className="textarea" style={{ minHeight: 130 }} value={text} onChange={(e) => setText(e.target.value)} placeholder={'Try “Dove shampoo 500ml” or “Parle-G biscuits”'} /><div className="subtle-card" style={{ padding: 13, marginTop: 13, fontSize: 11, lineHeight: 1.55, color: "#66736b" }}><strong style={{ color: "#28352c" }}>For better results:</strong> Fill the frame with the front label, avoid glare, and keep the text upright.</div></aside></div>
     {error && <div className="error-text" style={{ textAlign: "center", marginTop: 14 }}>{error}</div>}<div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 22, gap: 9 }}><button className="btn btn-primary" style={{ minWidth: 230, minHeight: 48 }} onClick={analyze} disabled={loading}>{loading ? <><LoaderCircle size={17} className="spin" />Analyzing product...</> : <><Sparkles size={17} />Extract product details</>}</button>{loading && <span className="muted" style={{ fontSize: 11 }}>{scanProgress}</span>}</div>
     <div className="scan-steps"><span><b>1</b>Capture</span><i /><span><b>2</b>AI extraction</span><i /><span><b>3</b>Your review</span><i /><span><b>4</b>Inventory</span></div>
     <style jsx>{`
@@ -133,4 +151,5 @@ export default function ScanPage() {
     `}</style>
   </div>;
 }
+
 
