@@ -53,6 +53,7 @@ const normalizeOcrText = (value: string) => value
   .toLowerCase()
   .replace(/\b(?:moniter|monter|moncter|mon5ter|m0nster)\b/g, "monster")
   .replace(/\b(?:enerdy|eneroy|enerqy|enercy|encrgy)\b/g, "energy")
+  .replace(/\b(?:red\s*bull|redbull|red\s*buii|red\s*buli)\b/g, "red bull")
   .replace(/\bta\s*rin(?:e)?\b/g, "taurine")
   .replace(/\bzero\s*sug(?:ar|or|er)\b/g, "zero sugar")
   .replace(/[^a-z0-9&.+\s-]/g, " ")
@@ -121,8 +122,8 @@ function specializedExtraction(text: string, businessType: BusinessType, detecte
       reasoning: "OCR contained fuzzy but matching Monster and Energy brand signals across the label.",
     });
   }
-  if (/\bred\s+bull\b/.test(text) && /\benergy\b|\bdrink\b/.test(text)) {
-    return makeResult({ productName: "Red Bull Energy Drink", brand: "Red Bull", category: "Beverages", description: "Canned energy drink.", confidence: 0.91, detectedText, reasoning: "OCR identified the Red Bull brand and energy drink product type." });
+  if (/\bred\s+bull\b/.test(text)) {
+    return makeResult({ productName: "Red Bull Energy Drink", brand: "Red Bull", category: "Beverages", description: "Canned energy drink.", confidence: /\benergy\b|\bdrink\b/.test(text) ? 0.92 : 0.88, detectedText, reasoning: "OCR identified the Red Bull brand; the product is classified as its standard energy drink." });
   }
   if (/\bwd\s+elements\b|portable\s+hdd|portable\s+hard\s+drive/.test(text)) {
     const capacity = text.match(/\b\d+(?:\.\d+)?\s?(?:tb|gb)\b/i)?.[0]?.toUpperCase().replace(/\s/g, " ");

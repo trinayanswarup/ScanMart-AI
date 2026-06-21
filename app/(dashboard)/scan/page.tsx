@@ -7,23 +7,50 @@ import { useApp } from "@/components/app-provider";
 import { confidenceLabel, mockExtractProduct } from "@/lib/ai";
 import { templates } from "@/lib/seed";
 import type { ProductAIExtraction } from "@/types";
-async function prepareImageForOcr(file: File): Promise<Blob> {
+type OcrVariant = { image: Blob; label: string };
+
+async function prepareOcrVariants(file: File): Promise<OcrVariant[]> {
   try {
     const bitmap = await createImageBitmap(file);
     const maxDimension = 2000;
     const scale = Math.min(2, maxDimension / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    const context = canvas.getContext("2d");
-    if (!context) return file;
-    context.filter = "grayscale(1) contrast(1.45)";
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const sourceWidth = Math.max(1, Math.round(bitmap.width * scale));
+    const sourceHeight = Math.max(1, Math.round(bitmap.height * scale));
+
+    const render = async (rotation: 0 | 90 | -90, label: string): Promise<OcrVariant> => {
+      const sideways = rotation !== 0;
+      const canvas = document.createElement("canvas");
+      canvas.width = sideways ? sourceHeight : sourceWidth;
+      canvas.height = sideways ? sourceWidth : sourceHeight;
+      const context = canvas.getContext("2d");
+      if (!context) return { image: file, label };
+      context.filter = "grayscale(1) contrast(1.55)";
+      context.translate(canvas.width / 2, canvas.height / 2);
+      context.rotate(rotation * Math.PI / 180);
+      context.drawImage(bitmap, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
+      const image = await new Promise<Blob>((resolve) => canvas.toBlob((blob) => resolve(blob ?? file), "image/jpeg", 0.95));
+      return { image, label };
+    };
+
+    const variants = await Promise.all([
+      render(0, "upright"),
+      render(90, "rotated right"),
+      render(-90, "rotated left"),
+    ]);
     bitmap.close();
-    return await new Promise<Blob>((resolve) => canvas.toBlob((blob) => resolve(blob ?? file), "image/jpeg", 0.94));
+    return variants;
   } catch {
-    return file;
+    return [{ image: file, label: "original" }];
   }
+}
+
+function scoreOcrResult(text: string, confidence: number) {
+  const normalized = text.toLowerCase();
+  const letters = (text.match(/[a-z]/gi) ?? []).length;
+  const words = (text.match(/[a-z]{3,}/gi) ?? []).length;
+  const productSignals = ["red bull", "red", "bull", "monster", "energy", "shampoo", "coffee", "milk", "biscuit", "toothpaste", "wd elements", "portable hdd"]
+    .filter((signal) => normalized.includes(signal)).length;
+  return confidence + Math.min(30, letters / 4) + Math.min(20, words * 2) + productSignals * 25;
 }
 
 export default function ScanPage() {
@@ -99,15 +126,34 @@ export default function ScanPage() {
     let detectedLabel = "";
     if (file) {
       try {
-        const { recognize } = await import("tesseract.js");
-        const response = await recognize(file, "eng", {
+        const { createWorker } = await import("tesseract.js");
+        const variants = await prepareOcrVariants(file);
+        let activeVariant = 0;
+        const worker = await createWorker("eng", 1, {
           logger: (message) => {
             if (message.status === "recognizing text" && typeof message.progress === "number") {
-              setScanProgress(`Reading product label… ${Math.round(message.progress * 100)}%`);
+              const overall = Math.round(((activeVariant + message.progress) / variants.length) * 100);
+              setScanProgress(`Reading label at multiple angles… ${Math.min(overall, 100)}%`);
             }
           },
         });
-        detectedLabel = response.data.text;
+        const results: Array<{ text: string; confidence: number; label: string; score: number }> = [];
+        for (let index = 0; index < variants.length; index += 1) {
+          activeVariant = index;
+          const response = await worker.recognize(variants[index].image);
+          const ocrText = response.data.text.trim();
+          results.push({
+            text: ocrText,
+            confidence: response.data.confidence,
+            label: variants[index].label,
+            score: scoreOcrResult(ocrText, response.data.confidence),
+          });
+        }
+        await worker.terminate();
+        results.sort((a, b) => b.score - a.score);
+        const usefulResults = results.filter((result) => (result.text.match(/[a-z]/gi) ?? []).length >= 3).slice(0, 2);
+        detectedLabel = usefulResults.map((result) => result.text).join("\n");
+        if (usefulResults[0]) setScanProgress(`Best label read: ${usefulResults[0].label}. Structuring product details…`);
       } catch {
         setScanProgress("OCR could not read the label; using filename and entered text…");
       }
