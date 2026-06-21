@@ -1,308 +1,183 @@
 # ScanMart AI
 
-Active MVP: AI-native inventory, storefront, and workflow automation platform for small businesses.
+> Turn product scans into inventory, storefront listings, and workflow automation.
 
-ScanMart AI helps small businesses turn product scans into structured inventory records, publishable storefront listings, and simple operational workflows. Sellers can scan a product image or enter label text, review the extracted product details, confirm the item into inventory, publish it to a mini storefront, and manage customer orders from one dashboard.
+AI-native commerce MVP for small businesses. Sellers scan or describe a product, review the structured output, save it to inventory, publish it to a storefront, accept customer orders, and inspect the workflow logs triggered by each action.
 
-AI is part of the product workflow rather than a chat box added beside it.
+**AI is part of the product workflow — not a chat box added beside it.**
 
----
-
-## What it does
-
-ScanMart AI is built around a simple business flow:
-
-1. A seller scans a product image or enters label text.
-2. The system extracts structured product details.
-3. The seller reviews and edits the result.
-4. The product is saved into inventory.
-5. The seller can publish it to a storefront.
-6. Customers can place orders.
-7. Order and stock actions are tracked through workflow execution logs.
-
-The current demo is built around **Urban Glow Salon** and runs without authentication, paid APIs, or external setup.
+Live demo: _Coming soon_ · Built around **Urban Glow Salon** · No auth, no paid APIs, no setup required.
 
 ---
 
-## Why I built this
+## Demo note
 
-Many small businesses still manage stock manually through notebooks, WhatsApp messages, spreadsheets, or memory. Creating a proper inventory system or online storefront usually requires time, technical knowledge, and repeated manual data entry.
+This repository contains a demo MVP, not a production store.
 
-ScanMart AI explores a faster workflow:
+The included **Urban Glow Salon** workspace uses seeded sample data to demonstrate inventory, storefront publishing, order handling, low-stock states, and workflow execution traces. Some sample products may not perfectly match the salon business type because they are included to test category handling and edge cases.
 
-> Scan the product → review structured data → add it to inventory → publish it → automate the next steps.
+The current demo runs with browser `localStorage`, OCR, and deterministic extraction. It is designed to show the complete product flow without authentication, paid AI APIs, or external setup.
 
-The goal is not to build a large marketplace. The goal is to show how AI can reduce repetitive work inside a real business process.
+## Screenshots
 
----
+Screenshots use the seeded Urban Glow Salon demo workspace. The sample inventory includes mixed product categories to demonstrate edge cases such as low stock, non-salon items, draft listings, and workflow traces.
 
-## Core features
+| Seller Dashboard            | Scan & Extraction Review     |
+| --------------------------- | ---------------------------- |
+| ![Dashboard](docs/home.png) | ![Scan](docs/extraction.png) |
 
-### Product scanning
+| Inventory & Storefront            | Workflow Trace                 |
+| --------------------------------- | ------------------------------ |
+| ![Inventory](docs/storefront.png) | ![Workflow](docs/workflow.png) |
 
-Sellers can upload a product image or enter label text. The app returns structured product data such as:
-
-* Product name
-* Brand
-* Category
-* Description
-* Quantity
-* Unit
-* Confidence score
-* Detected text
-
-### Human-in-the-loop review
-
-AI output is never saved blindly. The seller can review and edit every extracted field before confirming the product.
-
-Confidence levels guide the review flow:
-
-* High confidence: ready to confirm
-* Medium confidence: review suggested
-* Low confidence: manual correction required
-
-Corrections are stored as feedback so the system can track what changed between AI output and the final seller-approved record.
-
-### Inventory management
-
-Confirmed products are added to inventory with category, quantity, price, source, and stock status.
-
-The inventory dashboard supports:
-
-* Category filtering
-* Search
-* Low-stock indicators
-* Product status
-* Manual and AI-assisted item creation
-
-### Storefront publishing
-
-Inventory items can be published as storefront listings. This separates internal stock management from customer-facing products.
-
-A seller can keep an item in inventory only, or publish it to the public store when it is ready.
-
-### Order management
-
-Customers can browse the demo storefront, add products to cart, and place an order request.
-
-The seller can then accept or manage orders from the dashboard.
-
-No payment system is implemented in the MVP. The current flow is designed for pickup, cash-on-delivery, or manual confirmation.
-
-### Workflow automation traces
-
-ScanMart AI includes a simple workflow execution system inspired by automation tools, but focused only on inventory and commerce operations.
-
-Example workflow actions include:
-
-* Scan confirmation
-* Draft listing creation
-* Product publishing
-* Order acceptance
-* Stock reduction
-* Low-stock checks
-* Seller task creation
-* In-app notifications
-
-Each workflow run records step-by-step execution logs, including status, input, output, and timing.
-
-Order acceptance is designed to be idempotent, preventing duplicate stock reduction if the same order action is triggered more than once.
+| Order |
+| --------------------------------- | |
+| ![Order](docs/order.png) |
 
 ---
 
-## Demo flow
+## Product Flow
 
-The included demo uses **Urban Glow Salon**.
-
-Recommended demo path:
-
-1. Open the landing page.
-2. Enter the demo dashboard.
-3. Go to the scan page.
-4. Upload a product image or enter label text such as:
-
-```txt
-Dove shampoo 500ml
 ```
-
-5. Review the structured product result.
-6. Edit any field if needed.
-7. Confirm the product into inventory.
-8. Publish it as a storefront listing.
-9. Open the public storefront.
-10. Place a customer order.
-11. Accept the order from the seller dashboard.
-12. View workflow execution logs.
-
----
-
-## Example scan output
-
-```json
-{
-  "productName": "Dove Shampoo",
-  "brand": "Dove",
-  "category": "Haircare",
-  "description": "Daily care shampoo for salon inventory.",
-  "suggestedUnit": "bottle",
-  "suggestedQuantity": 1,
-  "confidence": 0.87,
-  "detectedText": ["Dove", "Shampoo", "500ml"]
-}
+Product scan / label text
+→ OCR + structured extraction
+→ seller review
+→ inventory record
+→ draft listing
+→ storefront publishing
+→ customer order
+→ stock update
+→ workflow trace
 ```
 
 ---
 
-## Tech stack
+## Features
 
-* Next.js
-* TypeScript
-* Tailwind CSS
-* Zod
-* Supabase-ready schema
-* LocalStorage demo mode
-* Mock AI extraction layer
-* Workflow execution logging
+**Product Capture**
 
-The MVP currently uses a local/demo-first setup so the product can be tested without paid services or authentication setup.
+- Image upload, camera capture, or manual label text
+- Browser-based OCR via Tesseract.js
+- Structured extraction with confidence score and detected text
 
----
+**Human-in-the-Loop Review**
 
-## AI architecture
+- Every AI output is reviewed before saving
+- All fields remain editable
+- Seller corrections tracked as feedback
 
-ScanMart AI uses an AI provider abstraction so the app can run in two modes:
+**Inventory Management**
 
-### Mock AI mode
+- Quantity, price, category, and stock status
+- Low-stock indicators
+- Manual and AI-assisted item creation
 
-Used for the current demo. It returns deterministic structured outputs based on product image names or label text.
+**Storefront & Orders**
 
-This keeps the demo free, fast, and reliable.
+- Seller-controlled publishing to a public storefront
+- Customer cart and order request flow
+- Idempotent stock reduction on order acceptance
 
-### Real AI provider mode
+**Workflow Automation**
 
-The codebase is structured so a real vision-language model can be connected later through the same interface.
-
-Potential providers:
-
-* Gemini Vision
-* OpenAI vision models
-* Other multimodal LLM APIs
+- Execution logs for scans, listings, orders, and low-stock checks
+- Step-by-step input, output, status, and timing per action
 
 ---
 
-## Workflow engine
+## Tech Stack
 
-The workflow engine is intentionally small and domain-specific.
+| Layer        | Tools                                                              |
+| ------------ | ------------------------------------------------------------------ |
+| Framework    | Next.js 15, React 19, TypeScript                                   |
+| Styling      | Tailwind CSS, Lucide React                                         |
+| Validation   | Zod                                                                |
+| OCR          | Tesseract.js                                                       |
+| Demo Runtime | LocalStorage (versioned, offline-capable)                          |
+| Database     | PostgreSQL / Supabase schema (production-ready, not yet connected) |
 
-It is not trying to recreate n8n. Instead, it focuses on the workflows needed inside this product.
+---
 
-Supported workflow concepts:
+## Architecture
 
-* Trigger
-* Node execution
-* Status tracking
-* Input/output logging
-* Failure handling
-* Human approval state
-* Idempotent order actions
+The app separates demo runtime from production persistence.
 
-Example workflow:
+- **Demo runtime** — `AppProvider` with versioned `localStorage`. Full product flow works offline without paid services.
+- **Production layer** — `supabase/` directory contains the full PostgreSQL schema, RLS policies, public storefront access rules, and seed data. Ready to connect.
 
-```txt
-Order accepted
-→ reduce stock
-→ check low stock
-→ create seller notification
-→ save execution trace
+---
+
+## Project Structure
+
 ```
-
-This makes the product more than a CRUD dashboard. It shows how AI-generated business data can move through operational workflows.
-
----
-
-## Project structure
-
-```txt
 app/
-  dashboard/
-  inventory/
-  scan/
-  orders/
-  automations/
-  store/
+  (dashboard)/
+  store/[storeSlug]/
+  cart/
+  order-confirmation/[id]/
 
 components/
-  dashboard/
-  inventory/
-  scan/
-  orders/
-  automations/
-  ui/
+  app-provider.tsx
+  dashboard-shell.tsx
 
 lib/
-  ai/
-  workflow/
-  templates/
-  validation/
-  storage/
+  ai.ts
+  seed.ts
+  validation.ts
 
 types/
   index.ts
+
+supabase/
+  schema.sql
+  seed.sql
 ```
 
 ---
 
-## Why this is AI-native
+## Local Setup
 
-ScanMart AI uses AI inside the actual product flow:
+```bash
+git clone <repository-url>
+cd scanmart-ai
+npm install
+npm run dev
+```
 
-* Product images and label text become structured inventory data.
-* Confidence scores influence review behavior.
-* Sellers can correct extracted fields before saving.
-* Corrections are stored as feedback.
-* Confirmed scans trigger operational workflows.
-* Workflow steps record input, output, status, and timing.
+Open `http://localhost:3000` — no API key required for the demo.
 
-The AI is not a side assistant. It is part of how products are created, validated, published, and processed.
+**Quality checks:**
 
----
-
-## Current status
-
-This is an active MVP build.
-
-Completed or in progress:
-
-* Product scan flow
-* Structured extraction interface
-* Human review and correction flow
-* Inventory dashboard
-* Storefront publishing flow
-* Customer order flow
-* Workflow execution logs
-* Demo business mode
-
-Planned improvements:
-
-* Real AI vision provider integration
-* Supabase authentication
-* Supabase storage for product images
-* Visual workflow builder
-* Receipt scanning
-* Barcode scanning
-* Supplier/reorder suggestions
-* Product analytics dashboard
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
 
 ---
 
-## Resume summary
+## Roadmap
 
-**ScanMart AI · Next.js · TypeScript · Tailwind · Zod · Supabase schema · LocalStorage demo**
-
-Built an AI-native inventory and storefront MVP where sellers scan product images or label text, review structured outputs, confirm inventory records, publish listings, and process customer orders.
-
-Designed human-in-the-loop validation where extracted fields remain editable, confidence controls review prompts, and seller corrections are stored as feedback for future improvement.
-
-Implemented workflow automation traces for scan confirmation, draft listing creation, order acceptance, stock reduction, low-stock checks, seller tasks, and notifications, with idempotent order acceptance to prevent duplicate stock reduction.
+- Connect runtime to Supabase
+- Seller authentication
+- Product image storage via Supabase Storage
+- Persist scan events and correction logs
+- Real multimodal AI provider (Gemini Vision / OpenAI)
+- Field-level confidence scores
+- Receipt and barcode scanning
+- Configurable workflow templates
+- Analytics and supplier/reorder suggestions
 
 ---
+
+## Project Boundaries
+
+This is a portfolio MVP. It intentionally excludes production authentication, connected persistence, online payments, delivery routing, and multi-tenant billing.
+
+The focus is one complete, observable product flow:
+
+```
+physical product → reviewed inventory → storefront listing → customer order → stock update → workflow trace
+```
+
+The demo data is intentionally not a perfect real-world salon catalog. It includes mixed products and edge cases to test how the inventory, category, stock, storefront, and workflow systems behave.
