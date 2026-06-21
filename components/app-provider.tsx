@@ -6,6 +6,7 @@ import type { AppState, Business, InventoryItem, Order, ProductAIExtraction } fr
 
 type NewInventory = Omit<InventoryItem, "id" | "businessId" | "createdAt">;
 type Checkout = { customerName: string; customerPhone?: string; customerEmail?: string };
+type ListingDraft = { title: string; description: string; price: number };
 
 interface AppContextValue {
   state: AppState;
@@ -13,6 +14,7 @@ interface AppContextValue {
   addInventory: (item: NewInventory, original?: ProductAIExtraction, corrected?: ProductAIExtraction) => string;
   updateInventory: (id: string, patch: Partial<InventoryItem>) => void;
   publishItem: (id: string) => void;
+  saveListing: (inventoryItemId: string, draft: ListingDraft) => { ok: boolean; message: string };
   addToCart: (listingId: string) => void;
   setCartQuantity: (listingId: string, quantity: number) => void;
   clearCart: () => void;
@@ -90,6 +92,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const saveListing = useCallback((inventoryItemId: string, draft: ListingDraft) => {
+    const title = draft.title.trim();
+    const description = draft.description.trim();
+    if (!title || !description || !Number.isFinite(draft.price) || draft.price <= 0) {
+      return { ok: false, message: "Add a title, description, and valid price." };
+    }
+
+    setState((current) => {
+      const inventoryItem = current.inventory.find((entry) => entry.id === inventoryItemId);
+      if (!inventoryItem) return current;
+      const existing = current.listings.find((entry) => entry.inventoryItemId === inventoryItemId);
+      const listing = {
+        id: existing?.id ?? makeId("list"),
+        businessId: current.business.id,
+        inventoryItemId,
+        title,
+        description,
+        price: draft.price,
+        imageUrl: inventoryItem.imageUrl,
+        isPublished: true,
+      };
+      return {
+        ...current,
+        inventory: current.inventory.map((entry) => entry.id === inventoryItemId ? { ...entry, name: title, description, price: draft.price } : entry),
+        listings: existing
+          ? current.listings.map((entry) => entry.id === existing.id ? listing : entry)
+          : [listing, ...current.listings],
+      };
+    });
+    return { ok: true, message: "Storefront listing updated." };
+  }, []);
   const addToCart = useCallback((listingId: string) => {
     setState((current) => {
       const exists = current.cart.find((item) => item.listingId === listingId);
@@ -176,7 +209,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateBusiness = useCallback((business: Partial<Business>) => setState((current) => ({ ...current, business: { ...current.business, ...business } })), []);
   const resetDemo = useCallback(() => setState(structuredClone(initialState)), []);
 
-  const value = useMemo(() => ({ state, hydrated, addInventory, updateInventory, publishItem, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo }), [state, hydrated, addInventory, updateInventory, publishItem, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo]);
+  const value = useMemo(() => ({ state, hydrated, addInventory, updateInventory, publishItem, saveListing, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo }), [state, hydrated, addInventory, updateInventory, publishItem, saveListing, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo]);
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
