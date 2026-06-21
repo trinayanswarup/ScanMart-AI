@@ -15,13 +15,15 @@ const categoryRules: Array<{ category: string; keywords: string[] }> = [
   { category: "Coffee", keywords: ["coffee", "arabica", "robusta", "espresso"] },
   { category: "Dairy", keywords: ["milk", "yogurt", "yoghurt", "cheese", "butter", "curd"] },
   { category: "Snacks", keywords: ["biscuit", "cookie", "chips", "cracker", "snack", "wafer"] },
-  { category: "Beverages", keywords: ["juice", "drink", "soda", "water", "tea"] },
+  { category: "Beverages", keywords: ["energy drink", "energy", "juice", "drink", "soda", "water", "tea"] },
   { category: "Cleaning", keywords: ["cleaner", "detergent", "dishwash", "floor wash", "sanitizer"] },
   { category: "Tools", keywords: ["razor", "clipper", "trimmer", "scissors", "dryer", "brush"] },
 ];
 
 const brandRules: Array<{ brand: string; keywords: string[] }> = [
   { brand: "Western Digital", keywords: ["western digital", "wd elements", "wd "] },
+  { brand: "Monster Energy", keywords: ["monster energy", "monster"] },
+  { brand: "Red Bull", keywords: ["red bull"] },
   { brand: "Dove", keywords: ["dove"] },
   { brand: "Colgate", keywords: ["colgate"] },
   { brand: "Parle", keywords: ["parle"] },
@@ -47,6 +49,15 @@ const noisePatterns = [
   /all rights reserved/i,
 ];
 
+const normalizeOcrText = (value: string) => value
+  .toLowerCase()
+  .replace(/\b(?:moniter|monter|moncter|mon5ter|m0nster)\b/g, "monster")
+  .replace(/\b(?:enerdy|eneroy|enerqy|enercy|encrgy)\b/g, "energy")
+  .replace(/\bta\s*rin(?:e)?\b/g, "taurine")
+  .replace(/\bzero\s*sug(?:ar|or|er)\b/g, "zero sugar")
+  .replace(/[^a-z0-9&.+\s-]/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
 const titleCase = (value: string) => value
   .toLowerCase()
   .replace(/\b(?:hdd|ssd|usb|tb|gb|mb|wd|ai)\b/g, (word) => word.toUpperCase())
@@ -98,6 +109,21 @@ function makeResult(values: {
 }
 
 function specializedExtraction(text: string, businessType: BusinessType, detectedText: string[]): ProductAIExtraction | null {
+  if (/\bmonster\b/.test(text) && /\benergy\b/.test(text)) {
+    const zeroSugar = /zero\s+sugar/.test(text);
+    return makeResult({
+      productName: `Monster Energy${zeroSugar ? " Zero Sugar" : " Drink"}`,
+      brand: "Monster Energy",
+      category: "Beverages",
+      description: `${zeroSugar ? "Zero-sugar " : "Canned "}energy drink.`,
+      confidence: 0.9,
+      detectedText,
+      reasoning: "OCR contained fuzzy but matching Monster and Energy brand signals across the label.",
+    });
+  }
+  if (/\bred\s+bull\b/.test(text) && /\benergy\b|\bdrink\b/.test(text)) {
+    return makeResult({ productName: "Red Bull Energy Drink", brand: "Red Bull", category: "Beverages", description: "Canned energy drink.", confidence: 0.91, detectedText, reasoning: "OCR identified the Red Bull brand and energy drink product type." });
+  }
   if (/\bwd\s+elements\b|portable\s+hdd|portable\s+hard\s+drive/.test(text)) {
     const capacity = text.match(/\b\d+(?:\.\d+)?\s?(?:tb|gb)\b/i)?.[0]?.toUpperCase().replace(/\s/g, " ");
     return makeResult({
@@ -124,7 +150,7 @@ function specializedExtraction(text: string, businessType: BusinessType, detecte
 export function mockExtractProduct(input: ProductScanInput, businessType: BusinessType): ProductAIExtraction {
   const lines = cleanLines(input);
   const detectedText = lines.slice(0, 8);
-  const text = lines.join(" ").toLowerCase();
+  const text = normalizeOcrText(lines.join(" "));
   const specialized = specializedExtraction(text, businessType, detectedText);
   if (specialized) return specialized;
 
