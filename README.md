@@ -1,5 +1,7 @@
 # ScanMart AI
 
+## STILL UNDER PROCESS
+
 **Turn physical stock into inventory, storefronts, and automated workflows.**
 
 ScanMart AI is an AI-native platform for small businesses that converts product scans into structured inventory, publishable storefront listings, and automated operational workflows.
