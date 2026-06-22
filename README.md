@@ -181,3 +181,4 @@ physical product → reviewed inventory → storefront listing → customer orde
 ```
 
 The demo data is intentionally not a perfect real-world salon catalog. It includes mixed products and edge cases to test how the inventory, category, stock, storefront, and workflow systems behave.
+
