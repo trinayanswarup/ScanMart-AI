@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { Logo } from "@/components/logo";
 import { useApp } from "@/components/app-provider";
 
-export default function StorefrontPage() {
+export default function ShopStorefrontPage() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
   const { state, addToCart, setCartQuantity } = useApp();
   const [category, setCategory] = useState("All");
@@ -15,7 +15,7 @@ export default function StorefrontPage() {
   const [drawer, setDrawer] = useState(false);
 
   const store = state.stores.find((s) => s.slug === storeSlug);
-  if (!store) return <div className="empty"><h2>Store not found</h2><Link href="/" className="btn btn-primary">Go home</Link></div>;
+  if (!store) return <div className="empty"><h2>Store not found</h2><Link href="/shop" className="btn btn-primary">Browse stores</Link></div>;
 
   const storeListings = state.listings.filter((l) => l.businessId === store.id);
   const storeInv = state.inventory.filter((i) => i.businessId === store.id);
@@ -30,7 +30,7 @@ export default function StorefrontPage() {
   const total = storeCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return <div style={{ minHeight: "100vh", background: "#fafbf9" }}>
-    <header className="store-header"><Logo /><nav><Link href="/dashboard">Seller dashboard</Link><button className="cart-button" onClick={() => setDrawer(true)}><ShoppingBag size={18} />Cart {storeCart.length > 0 && <b>{storeCart.reduce((sum, item) => sum + item.quantity, 0)}</b>}</button></nav></header>
+    <header className="store-header"><Logo /><nav><Link href="/shop">All stores</Link><Link href="/admin">Seller dashboard</Link><button className="cart-button" onClick={() => setDrawer(true)}><ShoppingBag size={18} />Cart {storeCart.length > 0 && <b>{storeCart.reduce((sum, item) => sum + item.quantity, 0)}</b>}</button></nav></header>
     <section className="store-hero"><div><span className="store-kicker"><Store size={14} />Local pickup available</span><h1>{store.name}</h1><p>Browse our carefully selected products, available for local pickup.</p><div className="store-meta"><span><Check size={14} />Pay at pickup</span><span><Check size={14} />Local service</span></div></div><div className="store-mark">{store.name.split(" ").map((word) => word[0]).join("")}</div></section>
     <main className="store-main"><div className="store-toolbar"><div className="categories">{categories.map((item) => <button className={category === item ? "category-active" : ""} onClick={() => setCategory(item)} key={item}>{item}</button>)}</div><div className="store-search"><Search size={16} /><input placeholder="Search products" value={search} onChange={(e) => setSearch(e.target.value)} /></div></div>
       <div className="product-heading"><div><h2>Shop products</h2><p>{products.length} items available</p></div></div>

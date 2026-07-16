@@ -20,7 +20,7 @@ export default function ConfirmationPage() {
         <span>Order reference</span>
         <strong>#{id.split("_").slice(-1)[0]?.toUpperCase()}</strong>
       </div>
-      <Link href={orderStore ? `/store/${orderStore.slug}` : "/"} className="btn btn-primary">Back to storefront</Link>
+      <Link href={orderStore ? `/shop/${orderStore.slug}` : "/shop"} className="btn btn-primary">Back to storefront</Link>
     </div>
   </main>;
 }

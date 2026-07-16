@@ -33,7 +33,7 @@ export default function CartPage() {
   return <div style={{ minHeight: "100vh", background: "#fafbf9" }}>
     <header style={{ height: 74, padding: "0 24px", maxWidth: 1120, margin: "auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <Logo />
-      <Link href={shoppingStore ? `/store/${shoppingStore.slug}` : "/"} className="btn btn-ghost"><ArrowLeft size={16} />Continue shopping</Link>
+      <Link href={shoppingStore ? `/shop/${shoppingStore.slug}` : "/shop"} className="btn btn-ghost"><ArrowLeft size={16} />Continue shopping</Link>
     </header>
     <main style={{ maxWidth: 1050, margin: "30px auto", padding: "0 20px 70px" }}>
       <div className="page-header"><div><h1>Checkout</h1><p>Review your order before confirming.</p></div></div>
@@ -73,7 +73,7 @@ export default function CartPage() {
           {error && <div className="error-text">{error}</div>}
           <button className="btn btn-primary" style={{ width: "100%", marginTop: 18 }} onClick={checkout}><CheckCircle2 size={16} />Place order request</button>
         </aside>
-      </div> : <div className="card empty"><div className="empty-icon"><ShoppingBag /></div><h2>Your cart is empty</h2><Link href={state.stores[0] ? `/store/${state.stores[0].slug}` : "/"} className="btn btn-primary">Browse the store</Link></div>}
+      </div> : <div className="card empty"><div className="empty-icon"><ShoppingBag /></div><h2>Your cart is empty</h2><Link href={state.stores[0] ? `/shop/${state.stores[0].slug}` : "/shop"} className="btn btn-primary">Browse the store</Link></div>}
     </main>
   </div>;
 }

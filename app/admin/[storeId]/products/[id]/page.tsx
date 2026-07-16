@@ -6,8 +6,8 @@ import { useState } from "react";
 import { ArrowLeft, Bot, Check, Clock3, Edit3, Package, Save, Send, Store, X } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 
-export default function ProductDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export default function AdminProductDetailPage() {
+  const { storeId, id } = useParams<{ storeId: string; id: string }>();
   const { state, saveListing, updateInventory } = useApp();
   const item = state.inventory.find((entry) => entry.id === id);
   const itemStore = item ? state.stores.find((s) => s.id === item.businessId) : undefined;
@@ -17,7 +17,7 @@ export default function ProductDetailPage() {
   const [listingForm, setListingForm] = useState({ title: "", description: "", price: "" });
   const [listingMessage, setListingMessage] = useState("");
 
-  if (!item) return <div className="page-wrap"><div className="empty"><h2>Product not found</h2><Link href="/inventory" className="btn btn-primary">Back to inventory</Link></div></div>;
+  if (!item) return <div className="page-wrap"><div className="empty"><h2>Product not found</h2><Link href={`/admin/${storeId}/inventory`} className="btn btn-primary">Back to inventory</Link></div></div>;
 
   const openListingEditor = () => {
     setListingForm({
@@ -40,10 +40,10 @@ export default function ProductDetailPage() {
   };
 
   return <div className="page-wrap">
-    <Link href="/inventory" className="btn btn-ghost" style={{ paddingLeft: 0, marginBottom: 12 }}><ArrowLeft size={16} />Back to inventory</Link>
+    <Link href={`/admin/${storeId}/inventory`} className="btn btn-ghost" style={{ paddingLeft: 0, marginBottom: 12 }}><ArrowLeft size={16} />Back to inventory</Link>
     <div className="page-header">
       <div><div style={{ display: "flex", alignItems: "center", gap: 10 }}><h1>{item.name}</h1><span className={`badge ${item.quantity <= item.lowStockThreshold ? "badge-amber" : "badge-green"}`}>{item.quantity <= item.lowStockThreshold ? "Low stock" : "In stock"}</span></div><p>{item.brand || "Unbranded"} · {item.category}</p></div>
-      <div style={{ display: "flex", gap: 9 }}>{listing?.isPublished && <Link href={`/store/${itemStore?.slug ?? ""}`} className="btn btn-secondary"><Store size={16} />View store</Link>}<button className="btn btn-primary" onClick={openListingEditor}><Send size={16} />{listing?.isPublished ? "Update listing" : "Publish product"}</button></div>
+      <div style={{ display: "flex", gap: 9 }}>{listing?.isPublished && <Link href={`/shop/${itemStore?.slug ?? ""}`} className="btn btn-secondary"><Store size={16} />View store</Link>}<button className="btn btn-primary" onClick={openListingEditor}><Send size={16} />{listing?.isPublished ? "Update listing" : "Publish product"}</button></div>
     </div>
 
     {listingMessage && <div className={listingMessage === "Storefront listing updated." ? "notice" : "error-text"} style={{ marginBottom: 18 }}>{listingMessage}</div>}

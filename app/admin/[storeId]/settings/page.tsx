@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { RotateCcw, Save } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 
-export default function SettingsPage() {
-  const { state, currentStoreId, setCurrentStoreId, getStore, updateBusiness, resetDemo } = useApp();
-  const storeId = currentStoreId ?? state.stores[0]?.id ?? "";
+export default function AdminSettingsPage() {
+  const { storeId } = useParams<{ storeId: string }>();
+  const { state, getStore, updateBusiness, resetDemo } = useApp();
+  const router = useRouter();
   const store = getStore(storeId);
 
   const [name, setName] = useState(store?.name ?? "");
@@ -35,13 +37,13 @@ export default function SettingsPage() {
       </section>
 
       <section className="card" style={{ padding: 26, marginTop: 20 }}>
-        <h2 className="section-title" style={{ marginBottom: 6 }}>Manage a different store</h2>
-        <p className="muted" style={{ fontSize: 13, marginBottom: 20 }}>Switch which store you are currently managing in the admin dashboard.</p>
+        <h2 className="section-title" style={{ marginBottom: 6 }}>Switch to a different store</h2>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 20 }}>Navigate to another store&apos;s admin panel.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {state.stores.map((s) => (
             <button
               key={s.id}
-              onClick={() => { setCurrentStoreId(s.id); setSaved(false); setName(s.name); setSlug(s.slug); setThreshold(s.lowStockThreshold); }}
+              onClick={() => router.push(`/admin/${s.id}/dashboard`)}
               style={{
                 border: s.id === storeId ? "2px solid #2C645B" : "1px solid #e1e9e9",
                 borderRadius: 8, padding: "16px 14px",

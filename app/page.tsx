@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, CheckCircle2, Package, ScanLine, ShoppingBag, Sparkles, Store, Zap } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, Package, ScanLine, ShieldCheck, ShoppingBag, Sparkles, Store, Zap } from "lucide-react";
 
 const businesses = [
   { type: "Salon", icon: "✂️", name: "Urban Glow Salon", items: "4 products", orders: "0 orders" },
@@ -8,14 +8,14 @@ const businesses = [
 ];
 
 const steps = [
-  { icon: ScanLine, step: "01", title: "Scan any product", body: "Upload a photo, scan a barcode, or describe the label. Tesseract OCR + Gemini vision extract everything in seconds." },
+  { icon: ScanLine, step: "01", title: "Scan any product", body: "Upload a photo, scan a barcode, or describe the label. Tesseract OCR + NVIDIA AI Vision extract everything in seconds." },
   { icon: CheckCircle2, step: "02", title: "Review & approve", body: "AI shows a confidence score. You see exactly what it extracted and why. Edit anything before saving." },
   { icon: Store, step: "03", title: "Storefront goes live", body: "One approval click publishes your product to a public storefront. Customers can browse, add to cart, and order." },
   { icon: Zap, step: "04", title: "Workflows handle the rest", body: "Every action — scan, order, low stock — triggers a logged automation. Full audit trail, always human-controlled." },
 ];
 
 const features = [
-  { icon: Sparkles, title: "Multimodal AI extraction", body: "Gemini 2.0 Flash reads the actual image + OCR text together. Confidence scoring tells you exactly how sure it is." },
+  { icon: Sparkles, title: "Multimodal AI extraction", body: "NVIDIA AI Vision reads the actual image + OCR text together. Confidence scoring tells you exactly how sure it is." },
   { icon: Package, title: "Barcode lookup", body: "Scan any barcode — Open Food Facts fills in product name, brand, and category instantly. No typing." },
   { icon: BarChart3, title: "Real-time inventory", body: "Stock reduces atomically on order acceptance. Low stock alerts trigger before you run out." },
   { icon: ShoppingBag, title: "Built-in storefront", body: "Every business gets a public product page. Search, filter, cart drawer, checkout — no separate e-commerce needed." },
@@ -35,16 +35,16 @@ export default function LandingPage() {
           <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-.02em" }}>ScanMart AI</span>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <Link href="/onboarding" className="btn btn-secondary" style={{ minHeight: 36, fontSize: 13 }}>Try demo</Link>
-          <Link href="/dashboard" className="btn btn-primary" style={{ minHeight: 36, fontSize: 13 }}>Open dashboard</Link>
+          <Link href="/shop" className="btn btn-secondary" style={{ minHeight: 36, fontSize: 13 }}>Browse stores</Link>
+          <Link href="/admin" className="btn btn-primary" style={{ minHeight: 36, fontSize: 13 }}>Admin panel</Link>
         </div>
       </nav>
 
       {/* Hero */}
       <section style={{ padding: "80px 32px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F0FAF5", border: "1px solid #73AB9540", borderRadius: 20, padding: "6px 14px", marginBottom: 28, fontSize: 13, fontWeight: 700, color: "#2C645B" }}>
-          <Sparkles size={13} />
-          Powered by Gemini 2.0 Flash · Tesseract OCR · Open Food Facts
+          <ShieldCheck size={13} />
+          Powered by NVIDIA AI Vision · Tesseract OCR · Open Food Facts
         </div>
         <h1 style={{ fontSize: "clamp(36px, 6vw, 68px)", fontWeight: 900, letterSpacing: "-.05em", lineHeight: 1.05, margin: "0 0 20px", color: "#092922" }}>
           Scan a label.<br />
@@ -54,11 +54,11 @@ export default function LandingPage() {
           ScanMart AI turns any product photo or barcode into a live inventory record and public storefront — in under 10 seconds.
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/onboarding" className="btn btn-primary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
+          <Link href="/admin" className="btn btn-primary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
             <ScanLine size={17} /> Start scanning free <ArrowRight size={15} />
           </Link>
-          <Link href="/store/urban-glow" className="btn btn-secondary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
-            <Store size={17} /> See live storefront
+          <Link href="/shop" className="btn btn-secondary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
+            <Store size={17} /> See live storefronts
           </Link>
         </div>
       </section>
@@ -134,7 +134,7 @@ export default function LandingPage() {
         <p style={{ color: "#73AB95", fontSize: 16, margin: "0 0 32px" }}>
           No sign-up needed. Full demo with real AI extraction.
         </p>
-        <Link href="/onboarding" className="btn" style={{ background: "#EB774D", color: "white", minHeight: 52, fontSize: 16, padding: "0 36px", borderColor: "#EB774D" }}>
+        <Link href="/admin" className="btn" style={{ background: "#EB774D", color: "white", minHeight: 52, fontSize: 16, padding: "0 36px", borderColor: "#EB774D" }}>
           <ScanLine size={18} /> Try ScanMart AI free <ArrowRight size={15} />
         </Link>
       </section>
@@ -142,7 +142,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer style={{ padding: "24px 32px", borderTop: "1px solid #e1e9e9", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#A4B4CC" }}>
         <span style={{ fontWeight: 700, color: "#2C645B" }}>ScanMart AI</span>
-        <span>Built for small businesses · Powered by Gemini 2.0 Flash</span>
+        <span>Built for small businesses · Powered by NVIDIA AI Vision</span>
       </footer>
     </div>
   );

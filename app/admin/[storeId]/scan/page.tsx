@@ -1,16 +1,15 @@
 "use client";
 
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Barcode, Camera, CheckCircle2, FileImage, ImageUp, LoaderCircle,
   RefreshCw, ScanLine, Sparkles, Type, Wifi, WifiOff, X,
 } from "lucide-react";
 import { useApp } from "@/components/app-provider";
-import { confidenceLabel, extractProduct, lookupBarcode, mockExtractProduct } from "@/lib/ai";
+import { confidenceLabel, extractProduct, lookupBarcode } from "@/lib/ai";
 import type { ProductAIExtraction } from "@/types";
 
-// — OCR helpers ————————————————————————————————————————————————————————————
 type OcrVariant = { image: Blob; label: string };
 
 async function prepareOcrVariants(file: File): Promise<OcrVariant[]> {
@@ -66,10 +65,10 @@ async function fileToBase64(file: File): Promise<{ base64: string; mimeType: str
 
 type Mode = "photo" | "barcode" | "text";
 
-export default function ScanPage() {
-  const { state, currentStoreId, getStore, addInventory } = useApp();
-  const activeStoreId = currentStoreId ?? state.stores[0]?.id ?? "";
-  const activeStore = getStore(activeStoreId);
+export default function AdminScanPage() {
+  const { storeId } = useParams<{ storeId: string }>();
+  const { getStore, addInventory } = useApp();
+  const activeStore = getStore(storeId);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -132,7 +131,6 @@ export default function ScanPage() {
     closeCamera();
   };
 
-  // — Barcode lookup ————————————————————————————————————————————————————————
   const lookupBarcodeManual = async () => {
     const code = barcodeInput.trim();
     if (!code) { setError("Enter a barcode number first."); return; }
@@ -146,7 +144,6 @@ export default function ScanPage() {
     setLoading(false); setScanProgress("");
   };
 
-  // — Barcode from image (ZXing) ————————————————————————————————————————————
   const scanBarcodeFromImage = async (imageFile: File): Promise<boolean> => {
     try {
       const { BrowserMultiFormatReader } = await import("@zxing/browser");
@@ -172,7 +169,6 @@ export default function ScanPage() {
     }
   };
 
-  // — Main analyze ——————————————————————————————————————————————————————————
   const analyze = async () => {
     if (!file && !text.trim()) { setError("Add a product photo or enter label text first."); return; }
     setLoading(true); setError(""); setScanProgress("Starting analysis…");
@@ -243,7 +239,7 @@ export default function ScanPage() {
       return;
     }
     const id = addInventory(
-      activeStoreId,
+      storeId,
       {
         name: result.productName,
         brand: result.brand,
@@ -260,7 +256,7 @@ export default function ScanPage() {
       original,
       result,
     );
-    router.push(`/products/${id}`);
+    router.push(`/admin/${storeId}/products/${id}`);
   };
 
   const confidenceColor = result
@@ -280,7 +276,6 @@ export default function ScanPage() {
         </div>
       </div>
 
-      {/* Mode tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 24, background: "#F6F6F6", padding: 4, borderRadius: 8, width: "fit-content" }}>
         {([["photo", "Photo / Camera", FileImage], ["barcode", "Barcode", Barcode], ["text", "Text Entry", Type]] as const).map(([m, label, Icon]) => (
           <button
@@ -303,7 +298,6 @@ export default function ScanPage() {
         ))}
       </div>
 
-      {/* Photo mode */}
       {mode === "photo" && (
         <div className="card" style={{ padding: 24 }}>
           {!camera ? (
@@ -386,7 +380,6 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Barcode mode */}
       {mode === "barcode" && (
         <div className="card" style={{ padding: 24 }}>
           <div style={{ marginBottom: 20 }}>
@@ -436,7 +429,6 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Text mode */}
       {mode === "text" && (
         <div className="card" style={{ padding: 24 }}>
           <label className="label">Describe the product</label>
@@ -461,7 +453,6 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Extraction result */}
       {result && (
         <div className="card" style={{ marginTop: 20, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
@@ -470,20 +461,11 @@ export default function ScanPage() {
               <h2 style={{ margin: "6px 0 0", fontSize: 18 }}>Review and save</h2>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 5,
-                  background: "#F6F6F6", border: "1px solid #e1e9e9",
-                  borderRadius: 4, padding: "4px 10px", fontSize: 12, fontWeight: 600,
-                }}
-              >
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#F6F6F6", border: "1px solid #e1e9e9", borderRadius: 4, padding: "4px 10px", fontSize: 12, fontWeight: 600 }}>
                 {usedAI ? <Wifi size={12} color="#2C645B" /> : <WifiOff size={12} color="#65777a" />}
                 {usedAI ? "AI Vision" : "Offline mode"}
               </span>
-              <span style={{
-                background: confidenceColor + "22", color: confidenceColor === "#7CD4AC" ? "#092922" : confidenceColor,
-                border: `1px solid ${confidenceColor}40`, borderRadius: 4, padding: "4px 10px", fontSize: 12, fontWeight: 700,
-              }}>
+              <span style={{ background: confidenceColor + "22", color: confidenceColor === "#7CD4AC" ? "#092922" : confidenceColor, border: `1px solid ${confidenceColor}40`, borderRadius: 4, padding: "4px 10px", fontSize: 12, fontWeight: 700 }}>
                 {Math.round(result.confidence * 100)}% · {confidenceText}
               </span>
             </div>
@@ -552,9 +534,7 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* ScanLine icon reference to avoid unused import warning */}
       <span style={{ display: "none" }}><ScanLine size={0} /></span>
-
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
