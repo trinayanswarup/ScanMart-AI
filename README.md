@@ -1,183 +1,128 @@
 # ScanMart AI
 
-> Turn product scans into inventory, storefront listings, and workflow automation.
-
-AI-native commerce MVP for small businesses. Sellers scan or describe a product, review the structured output, save it to inventory, publish it to a storefront, accept customer orders, and inspect the workflow logs triggered by each action.
-
-**AI is part of the product workflow — not a chat box added beside it.**
-
-Live demo: _Coming soon_ · Built around **Urban Glow Salon** · No auth, no paid APIs, no setup required.
+> AI-powered inventory management for small businesses — scan a label, get a live product listing in seconds.
 
 ---
 
-## Demo note
+## What it does
 
-This repository contains a demo MVP, not a production store.
+Small business owners (salons, cafés, grocery stores) waste hours manually entering product data. ScanMart AI eliminates that:
 
-The included **Urban Glow Salon** workspace uses seeded sample data to demonstrate inventory, storefront publishing, order handling, low-stock states, and workflow execution traces. Some sample products may not perfectly match the salon business type because they are included to test category handling and edge cases.
+1. **Scan** — Upload a photo or scan a barcode
+2. **Extract** — Gemini 2.0 Flash vision reads the label and returns structured product data with a confidence score
+3. **Review** — Seller sees exactly what the AI extracted and can edit anything
+4. **Approve** — One click publishes to a public storefront
+5. **Track** — Every step is logged in a workflow execution trace
 
-The current demo runs with browser `localStorage`, OCR, and deterministic extraction. It is designed to show the complete product flow without authentication, paid AI APIs, or external setup.
-
-## Screenshots
-
-Screenshots use the seeded Urban Glow Salon demo workspace. The sample inventory includes mixed product categories to demonstrate edge cases such as low stock, non-salon items, draft listings, and workflow traces.
-
-| Seller Dashboard            | Scan & Extraction Review     |
-| --------------------------- | ---------------------------- |
-| ![Dashboard](docs/home.png) | ![Scan](docs/extraction.png) |
-
-| Inventory & Storefront            | Workflow Trace                 |
-| --------------------------------- | ------------------------------ |
-| ![Inventory](docs/storefront.png) | ![Workflow](docs/workflow.png) |
-
-| Order |
-| --------------------------------- | |
-| ![Order](docs/order.png) |
+The core thesis: **AI is part of the product workflow, not a chatbox stapled on the side.**
 
 ---
 
-## Product Flow
+## Tech stack
 
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 (App Router), React 19 |
+| Language | TypeScript 5.7 strict |
+| AI extraction | Gemini 2.0 Flash (vision + text) via `@google/genai` |
+| OCR | Tesseract.js 7 (browser, 3-angle scan) |
+| Barcode | `@zxing/browser` + Open Food Facts API |
+| Styling | Tailwind CSS 4, Lucide React |
+| Validation | Zod 3 |
+| Storage | localStorage (demo) · Supabase schema included |
+
+---
+
+## Key features
+
+- **Multimodal AI** — Sends both the raw image and OCR text to Gemini for maximum accuracy
+- **3-angle OCR** — Tesseract runs at 0°, 90°, 270° and picks the best result
+- **Barcode lookup** — ZXing decodes barcodes from images; Open Food Facts fills product data
+- **Confidence scoring** — Every extraction gets a 0–1 score with human-readable label
+- **Atomic order processing** — Stock validates ALL items before any mutation; reduces exactly once
+- **Workflow audit trail** — Every automation step logged with input, output, status, timestamp
+- **Human-in-the-loop** — Nothing publishes without seller approval
+- **3 demo businesses** — Salon, café, and grocery with full seed data
+
+---
+
+## Demo businesses
+
+| Business | Type | Products |
+|---|---|---|
+| Urban Glow Salon | Salon | Shampoo, wax, razors, serums |
+| Corner Café | Café | Coffee beans, oat milk, croissants |
+| FreshMart Grocery | Grocery | Biscuits, butter, salt, snacks |
+
+Switch between them in Settings → Switch demo business.
+
+---
+
+## Getting started
+
+```bash
+git clone https://github.com/trinayanswarup/ScanMart-AI
+cd ScanMart-AI
+npm install
+cp .env.example .env.local
+# Add GEMINI_API_KEY to .env.local
+npm run dev
 ```
-Product scan / label text
-→ OCR + structured extraction
-→ seller review
-→ inventory record
-→ draft listing
-→ storefront publishing
-→ customer order
-→ stock update
-→ workflow trace
-```
 
----
+Open [http://localhost:3000](http://localhost:3000).
 
-## Features
-
-**Product Capture**
-
-- Image upload, camera capture, or manual label text
-- Browser-based OCR via Tesseract.js
-- Structured extraction with confidence score and detected text
-
-**Human-in-the-Loop Review**
-
-- Every AI output is reviewed before saving
-- All fields remain editable
-- Seller corrections tracked as feedback
-
-**Inventory Management**
-
-- Quantity, price, category, and stock status
-- Low-stock indicators
-- Manual and AI-assisted item creation
-
-**Storefront & Orders**
-
-- Seller-controlled publishing to a public storefront
-- Customer cart and order request flow
-- Idempotent stock reduction on order acceptance
-
-**Workflow Automation**
-
-- Execution logs for scans, listings, orders, and low-stock checks
-- Step-by-step input, output, status, and timing per action
-
----
-
-## Tech Stack
-
-| Layer        | Tools                                                              |
-| ------------ | ------------------------------------------------------------------ |
-| Framework    | Next.js 15, React 19, TypeScript                                   |
-| Styling      | Tailwind CSS, Lucide React                                         |
-| Validation   | Zod                                                                |
-| OCR          | Tesseract.js                                                       |
-| Demo Runtime | LocalStorage (versioned, offline-capable)                          |
-| Database     | PostgreSQL / Supabase schema (production-ready, not yet connected) |
+Without a `GEMINI_API_KEY` the app falls back to the deterministic mock extractor automatically — no errors.
 
 ---
 
 ## Architecture
 
-The app separates demo runtime from production persistence.
-
-- **Demo runtime** — `AppProvider` with versioned `localStorage`. Full product flow works offline without paid services.
-- **Production layer** — `supabase/` directory contains the full PostgreSQL schema, RLS policies, public storefront access rules, and seed data. Ready to connect.
-
----
-
-## Project Structure
-
 ```
-app/
-  (dashboard)/
-  store/[storeSlug]/
-  cart/
-  order-confirmation/[id]/
-
-components/
-  app-provider.tsx
-  dashboard-shell.tsx
-
-lib/
-  ai.ts
-  seed.ts
-  validation.ts
-
-types/
-  index.ts
-
-supabase/
-  schema.sql
-  seed.sql
+User scans product
+  ↓
+Tesseract.js (3-angle OCR in browser)
+  ↓
+ZXing (barcode detection from image)
+  ↓ (if barcode found)
+Open Food Facts API → ProductAIExtraction
+  ↓ (if no barcode)
+POST /api/extract → Gemini 2.0 Flash (image + OCR text) → ProductAIExtraction
+  ↓ (if no API key / API fails)
+mockExtractProduct() → deterministic local fallback
+  ↓
+Seller reviews confidence score and edits fields
+  ↓
+addInventory() → AppState update → localStorage
+  ↓
+Workflow execution: PRODUCT_SCANNED → draft listing → human approval
+  ↓
+Seller approves → listing published → public storefront live
+  ↓
+Customer orders → atomic stock validation → ORDER_ACCEPTED workflow
 ```
 
 ---
 
-## Local Setup
+## Environment variables
 
-```bash
-git clone <repository-url>
-cd scanmart-ai
-npm install
-npm run dev
-```
+```env
+GEMINI_API_KEY=         # Required for real AI extraction (falls back to mock if absent)
 
-Open `http://localhost:3000` — no API key required for the demo.
-
-**Quality checks:**
-
-```bash
-npm run typecheck
-npm run lint
-npm run build
+# Supabase — schema included at supabase/schema.sql, not yet wired to the client
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 ---
 
-## Roadmap
+## Production roadmap
 
-- Connect runtime to Supabase
-- Seller authentication
-- Product image storage via Supabase Storage
-- Persist scan events and correction logs
-- Real multimodal AI provider (Gemini Vision / OpenAI)
-- Field-level confidence scores
-- Receipt and barcode scanning
-- Configurable workflow templates
-- Analytics and supplier/reorder suggestions
+- **Phase 1 (done):** Full demo MVP — localStorage, mock AI fallback, complete UI
+- **Phase 2:** Supabase auth + DB client, real image storage
+- **Phase 3:** Correction dataset feedback loop, background workflow runner
+- **Phase 4:** Multi-staff roles, payments, supplier workflows
 
 ---
 
-## Project Boundaries
-
-This is a portfolio MVP. It intentionally excludes production authentication, connected persistence, online payments, delivery routing, and multi-tenant billing.
-
-The focus is one complete, observable product flow:
-
-```
-physical product → reviewed inventory → storefront listing → customer order → stock update → workflow trace
-```
-
-The demo data is intentionally not a perfect real-world salon catalog. It includes mixed products and edge cases to test how the inventory, category, stock, storefront, and workflow systems behave.
+Built by [Trinayan Swarup](https://github.com/trinayanswarup)

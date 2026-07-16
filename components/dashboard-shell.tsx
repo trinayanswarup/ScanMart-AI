@@ -18,8 +18,12 @@ const links = [
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  const { state } = useApp();
+  const { state, currentStoreId, setCurrentStoreId } = useApp();
   const [open, setOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
+
+  const activeStoreId = currentStoreId ?? state.stores[0]?.id ?? "";
+  const activeStore = state.stores.find((s) => s.id === activeStoreId) ?? state.stores[0];
 
   return (
     <div style={{ minHeight: "100vh" }}>
@@ -33,14 +37,36 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           })}
           <div className="nav-label" style={{ marginTop: 24 }}>Quick links</div>
           <Link href="/inventory/new" onClick={() => setOpen(false)} className="nav-link"><PackagePlus size={18} />Add manually</Link>
-          <Link href={`/store/${state.business.slug}`} onClick={() => setOpen(false)} className="nav-link"><Store size={18} />View storefront</Link>
+          <Link href={`/store/${activeStore?.slug ?? ""}`} onClick={() => setOpen(false)} className="nav-link"><Store size={18} />View storefront</Link>
         </nav>
-        <div style={{ marginTop: "auto", padding: 16 }}>
-          <div className="business-chip">
-            <div className="business-avatar">{state.business.name.slice(0, 1)}</div>
-            <div style={{ minWidth: 0 }}><strong>{state.business.name}</strong><span>{state.business.businessType} workspace</span></div>
-            <ChevronDown size={15} />
-          </div>
+        <div style={{ marginTop: "auto", padding: 16, position: "relative" }}>
+          <button
+            onClick={() => setStoreOpen(!storeOpen)}
+            style={{ width: "100%", border: "none", background: "transparent", padding: 0, cursor: "pointer", textAlign: "left" }}
+          >
+            <div className="business-chip">
+              <div className="business-avatar">{activeStore?.name.slice(0, 1) ?? "?"}</div>
+              <div style={{ minWidth: 0 }}>
+                <strong>{activeStore?.name ?? "Select a store"}</strong>
+                <span>{activeStore?.businessType ?? ""} workspace</span>
+              </div>
+              <ChevronDown size={15} style={{ transform: storeOpen ? "rotate(180deg)" : "none", transition: ".15s" }} />
+            </div>
+          </button>
+          {storeOpen && (
+            <div className="store-picker">
+              {state.stores.map((store) => (
+                <button
+                  key={store.id}
+                  className={`store-option ${store.id === activeStoreId ? "store-option-active" : ""}`}
+                  onClick={() => { setCurrentStoreId(store.id); setStoreOpen(false); }}
+                >
+                  <strong>{store.name}</strong>
+                  <span style={{ textTransform: "capitalize" }}>{store.businessType}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </aside>
       {open && <button aria-label="Close navigation" className="sidebar-overlay" onClick={() => setOpen(false)} />}
@@ -56,9 +82,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         .nav-link:hover { background: #f4f7f5; color: #243128; }
         .nav-active { background: #F6F6F6 !important; color: #2C645B !important; }
         .business-chip { display: grid; grid-template-columns: 35px 1fr auto; gap: 10px; align-items: center; border: 1px solid #e4e9e5; border-radius: 5px; padding: 10px; }
+        .business-chip:hover { background: #f6f8f6; }
         .business-avatar { width: 35px; height: 35px; border-radius: 5px; display: grid; place-items: center; color: white; background: #2C645B; font-weight: 800; }
         .business-chip strong, .business-chip span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .business-chip strong { font-size: 12px; } .business-chip span { color: #7a857e; font-size: 10px; margin-top: 3px; text-transform: capitalize; }
+        .store-picker { position: absolute; bottom: calc(100% + 4px); left: 16px; right: 16px; background: white; border: 1px solid #e4e9e5; border-radius: 8px; box-shadow: 0 8px 24px rgb(20 30 24 / 12%); overflow: hidden; z-index: 10; }
+        .store-option { width: 100%; border: none; background: transparent; padding: 12px 14px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 3px; border-bottom: 1px solid #f0f3f1; }
+        .store-option:last-child { border-bottom: none; }
+        .store-option:hover { background: #f6f8f6; }
+        .store-option strong { font-size: 13px; color: #1a2820; }
+        .store-option span { font-size: 11px; color: #7a857e; }
+        .store-option-active { background: #f0faf5 !important; }
+        .store-option-active strong { color: #2C645B; }
         .mobile-header { display: none; }
         .sidebar-overlay { display: none; }
         @media (max-width: 800px) {
@@ -72,4 +107,3 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-

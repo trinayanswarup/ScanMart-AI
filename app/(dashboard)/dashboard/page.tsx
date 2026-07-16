@@ -6,20 +6,31 @@ import { useApp } from "@/components/app-provider";
 import { StatusBadge } from "@/components/status-badge";
 
 export default function DashboardPage() {
-  const { state } = useApp();
-  const active = state.inventory.filter((item) => item.status === "active");
+  const { state, currentStoreId, getStore, getStoreInventory, getStoreListings, getStoreOrders } = useApp();
+  const storeId = currentStoreId ?? state.stores[0]?.id ?? "";
+  const store = getStore(storeId);
+
+  const inv = getStoreInventory(storeId);
+  const active = inv.filter((item) => item.status === "active");
   const low = active.filter((item) => item.quantity <= item.lowStockThreshold);
-  const published = state.listings.filter((item) => item.isPublished).length;
-  const pending = state.orders.filter((item) => item.status === "new").length;
-  const latest = state.executions[0];
+  const published = getStoreListings(storeId).filter((item) => item.isPublished).length;
+  const orders = getStoreOrders(storeId);
+  const pending = orders.filter((item) => item.status === "new").length;
+
+  const storeWorkflowIds = new Set(state.workflows.filter((w) => w.businessId === storeId).map((w) => w.id));
+  const latest = state.executions.find((e) => storeWorkflowIds.has(e.workflowId));
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = store?.name.split(" ")[0] ?? "there";
 
   return <div className="page-wrap">
-    <div className="page-header"><div><div className="eyebrow">Thursday, 18 June</div><h1>Good morning, Urban Glow.</h1><p>Here’s what is happening across your business today.</p></div><div style={{ display: "flex", gap: 10 }}><Link href={`/store/${state.business.slug}`} className="btn btn-secondary"><Store size={16} />View store</Link><Link href="/scan" className="btn btn-primary"><ScanLine size={16} />Scan product</Link></div></div>
+    <div className="page-header"><div><div className="eyebrow">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</div><h1>{greeting}, {firstName}.</h1><p>Here&apos;s what is happening across your business today.</p></div><div style={{ display: "flex", gap: 10 }}><Link href={`/store/${store?.slug ?? ""}`} className="btn btn-secondary"><Store size={16} />View store</Link><Link href="/scan" className="btn btn-primary"><ScanLine size={16} />Scan product</Link></div></div>
     <div className="grid-4">
       <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Inventory items</span><Box size={18} color="#2C645B" /></div><div className="metric-value">{active.length}</div><small className="muted">{published} published online</small></div>
       <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Low stock</span><CircleAlert size={18} color="#EB774D" /></div><div className="metric-value">{low.length}</div><small style={{ color: low.length ? "#9D552C" : "#657169" }}>{low.length ? "Needs your attention" : "Stock looks healthy"}</small></div>
-      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Open orders</span><ShoppingBag size={18} color="#A4B4CC" /></div><div className="metric-value">{pending}</div><small className="muted">{state.orders.length} total orders</small></div>
-      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Order value</span><IndianRupee size={18} color="#2C645B" /></div><div className="metric-value">₹{state.orders.reduce((sum, order) => sum + order.totalAmount, 0).toLocaleString()}</div><small className="muted">Demo store revenue</small></div>
+      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Open orders</span><ShoppingBag size={18} color="#A4B4CC" /></div><div className="metric-value">{pending}</div><small className="muted">{orders.length} total orders</small></div>
+      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Order value</span><IndianRupee size={18} color="#2C645B" /></div><div className="metric-value">₹{orders.reduce((sum, order) => sum + order.totalAmount, 0).toLocaleString()}</div><small className="muted">Store revenue</small></div>
     </div>
     <div className="grid-2" style={{ marginTop: 20, gridTemplateColumns: "1.3fr .7fr" }}>
       <section className="card">
@@ -33,4 +44,3 @@ export default function DashboardPage() {
     <section style={{ marginTop: 20 }}><h2 className="section-title" style={{ marginBottom: 14 }}>Quick actions</h2><div className="grid-3">{[{ href: "/scan", icon: ScanLine, title: "Scan a product", text: "Use an image, webcam, or label text." }, { href: "/inventory/new", icon: PackagePlus, title: "Add manually", text: "Create a precise inventory record." }, { href: "/automations", icon: Zap, title: "Review workflows", text: "See what your automations have done." }].map(({ href, icon: Icon, title, text }) => <Link href={href} className="card" style={{ padding: 19, display: "flex", gap: 14, alignItems: "center" }} key={title}><div style={{ width: 42, height: 42, borderRadius: 5, background: "#F6F6F6", color: "#2C645B", display: "grid", placeItems: "center" }}><Icon size={19} /></div><div><strong style={{ fontSize: 14 }}>{title}</strong><p className="muted" style={{ fontSize: 11, margin: "5px 0 0" }}>{text}</p></div></Link>)}</div></section>
   </div>;
 }
-

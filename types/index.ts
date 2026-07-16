@@ -3,6 +3,11 @@ export type ProductSource = "manual" | "ai_scan" | "receipt" | "import";
 export type OrderStatus = "new" | "accepted" | "completed" | "cancelled";
 export type ExecutionStatus = "running" | "success" | "failed" | "waiting_for_human" | "skipped";
 
+export interface Company {
+  id: string;
+  name: string;
+}
+
 export interface Business {
   id: string;
   name: string;
@@ -41,8 +46,14 @@ export interface ProductListing {
 }
 
 export interface CartItem {
+  storeId: string;
+  storeName: string;
   listingId: string;
+  inventoryItemId: string;
+  productName: string;
+  price: number;
   quantity: number;
+  imageUrl?: string;
 }
 
 export interface OrderItem {
@@ -121,7 +132,8 @@ export interface CorrectionLog {
 }
 
 export interface AppState {
-  business: Business;
+  company: Company;
+  stores: Business[];
   inventory: InventoryItem[];
   listings: ProductListing[];
   orders: Order[];

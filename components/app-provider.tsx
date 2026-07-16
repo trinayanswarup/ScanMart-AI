@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { initialState } from "@/lib/seed";
-import type { AppState, Business, InventoryItem, Order, ProductAIExtraction } from "@/types";
+import type { AppState, Business, CartItem, InventoryItem, Order, ProductAIExtraction } from "@/types";
 
 type NewInventory = Omit<InventoryItem, "id" | "businessId" | "createdAt">;
 type Checkout = { customerName: string; customerPhone?: string; customerEmail?: string };
@@ -11,27 +11,35 @@ type ListingDraft = { title: string; description: string; price: number };
 interface AppContextValue {
   state: AppState;
   hydrated: boolean;
-  addInventory: (item: NewInventory, original?: ProductAIExtraction, corrected?: ProductAIExtraction) => string;
+  currentStoreId: string | null;
+  setCurrentStoreId: (id: string) => void;
+  getStore: (id: string) => Business | undefined;
+  getStoreInventory: (id: string) => InventoryItem[];
+  getStoreListings: (id: string) => ReturnType<AppState["listings"]["filter"]>;
+  getStoreOrders: (id: string) => Order[];
+  addInventory: (storeId: string, item: NewInventory, original?: ProductAIExtraction, corrected?: ProductAIExtraction) => string;
   updateInventory: (id: string, patch: Partial<InventoryItem>) => void;
   publishItem: (id: string) => void;
   saveListing: (inventoryItemId: string, draft: ListingDraft) => { ok: boolean; message: string };
   addToCart: (listingId: string) => void;
+  removeFromCart: (listingId: string) => void;
   setCartQuantity: (listingId: string, quantity: number) => void;
   clearCart: () => void;
-  placeOrder: (customer: Checkout) => string;
+  placeOrder: (customer: Checkout) => string[];
   updateOrderStatus: (id: string, status: Order["status"]) => { ok: boolean; message?: string };
   approveWorkflowExecution: (executionId: string) => { ok: boolean; message: string };
-  updateBusiness: (business: Partial<Business>) => void;
+  updateBusiness: (storeId: string, patch: Partial<Business>) => void;
   resetDemo: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
-const STORAGE_KEY = "scanmart_demo_v1";
+const STORAGE_KEY = "scanmart_shared_v2";
 const makeId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [currentStoreId, setCurrentStoreId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -45,17 +53,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [hydrated, state]);
 
-  const addInventory = useCallback((item: NewInventory, original?: ProductAIExtraction, corrected?: ProductAIExtraction) => {
+  const getStore = useCallback((id: string) => state.stores.find((s) => s.id === id), [state.stores]);
+  const getStoreInventory = useCallback((id: string) => state.inventory.filter((item) => item.businessId === id), [state.inventory]);
+  const getStoreListings = useCallback((id: string) => state.listings.filter((l) => l.businessId === id), [state.listings]);
+  const getStoreOrders = useCallback((id: string) => state.orders.filter((o) => o.businessId === id), [state.orders]);
+
+  const addInventory = useCallback((storeId: string, item: NewInventory, original?: ProductAIExtraction, corrected?: ProductAIExtraction) => {
     const id = makeId("inv");
-    const inventoryItem: InventoryItem = { ...item, id, businessId: state.business.id, createdAt: new Date().toISOString() };
+    const inventoryItem: InventoryItem = { ...item, id, businessId: storeId, createdAt: new Date().toISOString() };
     setState((current) => {
-      const workflow = current.workflows.find((entry) => entry.triggerType === "PRODUCT_SCANNED");
+      const workflow = current.workflows.find((entry) => entry.triggerType === "PRODUCT_SCANNED" && entry.businessId === storeId);
       const listingId = makeId("list");
       const executionId = makeId("exec");
       return {
         ...current,
         inventory: [inventoryItem, ...current.inventory],
-        listings: item.source === "ai_scan" ? [{ id: listingId, businessId: current.business.id, inventoryItemId: id, title: item.name, description: item.description, price: item.price ?? 0, isPublished: false }, ...current.listings] : current.listings,
+        listings: item.source === "ai_scan"
+          ? [{ id: listingId, businessId: storeId, inventoryItemId: id, title: item.name, description: item.description, price: item.price ?? 0, isPublished: false }, ...current.listings]
+          : current.listings,
         corrections: original && corrected && JSON.stringify(original) !== JSON.stringify(corrected)
           ? [{ id: makeId("correction"), inventoryItemId: id, original, corrected, createdAt: new Date().toISOString() }, ...current.corrections]
           : current.corrections,
@@ -70,11 +85,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             { id: makeId("node"), nodeName: "Draft listing created", nodeType: "CREATE_DRAFT_LISTING", status: "success", input: { inventoryItemId: id }, output: { listingId }, timestamp: new Date().toISOString() },
             { id: makeId("node"), nodeName: "Waiting for seller approval", nodeType: "REQUEST_HUMAN_APPROVAL", status: "waiting_for_human", input: { listingId }, timestamp: new Date().toISOString() },
           ],
-        }, ...current.executions] : current.executions,
+        } as const, ...current.executions] : current.executions,
       };
     });
     return id;
-  }, [state.business.id]);
+  }, []);
 
   const updateInventory = useCallback((id: string, patch: Partial<InventoryItem>) => {
     setState((current) => ({ ...current, inventory: current.inventory.map((item) => item.id === id ? { ...item, ...patch } : item) }));
@@ -87,7 +102,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const existing = current.listings.find((listing) => listing.inventoryItemId === id);
       const listings = existing
         ? current.listings.map((listing) => listing.inventoryItemId === id ? { ...listing, title: item.name, description: item.description, price: item.price!, isPublished: true } : listing)
-        : [{ id: makeId("list"), businessId: current.business.id, inventoryItemId: id, title: item.name, description: item.description, price: item.price, imageUrl: item.imageUrl, isPublished: true }, ...current.listings];
+        : [{ id: makeId("list"), businessId: item.businessId, inventoryItemId: id, title: item.name, description: item.description, price: item.price, imageUrl: item.imageUrl, isPublished: true }, ...current.listings];
       return { ...current, listings };
     });
   }, []);
@@ -98,14 +113,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!title || !description || !Number.isFinite(draft.price) || draft.price <= 0) {
       return { ok: false, message: "Add a title, description, and valid price." };
     }
-
     setState((current) => {
       const inventoryItem = current.inventory.find((entry) => entry.id === inventoryItemId);
       if (!inventoryItem) return current;
       const existing = current.listings.find((entry) => entry.inventoryItemId === inventoryItemId);
       const listing = {
         id: existing?.id ?? makeId("list"),
-        businessId: current.business.id,
+        businessId: inventoryItem.businessId,
         inventoryItemId,
         title,
         description,
@@ -123,31 +137,96 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     return { ok: true, message: "Storefront listing updated." };
   }, []);
+
   const addToCart = useCallback((listingId: string) => {
     setState((current) => {
-      const exists = current.cart.find((item) => item.listingId === listingId);
-      return { ...current, cart: exists ? current.cart.map((item) => item.listingId === listingId ? { ...item, quantity: item.quantity + 1 } : item) : [...current.cart, { listingId, quantity: 1 }] };
+      const listing = current.listings.find((l) => l.id === listingId);
+      if (!listing) return current;
+      const store = current.stores.find((s) => s.id === listing.businessId);
+      const invItem = current.inventory.find((i) => i.id === listing.inventoryItemId);
+      if (!store || !invItem) return current;
+      const existing = current.cart.find((c) => c.listingId === listingId);
+      if (existing) {
+        return { ...current, cart: current.cart.map((c) => c.listingId === listingId ? { ...c, quantity: c.quantity + 1 } : c) };
+      }
+      const newItem: CartItem = {
+        storeId: store.id,
+        storeName: store.name,
+        listingId: listing.id,
+        inventoryItemId: listing.inventoryItemId,
+        productName: listing.title,
+        price: listing.price,
+        quantity: 1,
+        imageUrl: invItem.imageUrl,
+      };
+      return { ...current, cart: [...current.cart, newItem] };
     });
   }, []);
 
+  const removeFromCart = useCallback((listingId: string) => {
+    setState((current) => ({ ...current, cart: current.cart.filter((c) => c.listingId !== listingId) }));
+  }, []);
+
   const setCartQuantity = useCallback((listingId: string, quantity: number) => {
-    setState((current) => ({ ...current, cart: quantity <= 0 ? current.cart.filter((item) => item.listingId !== listingId) : current.cart.map((item) => item.listingId === listingId ? { ...item, quantity } : item) }));
+    setState((current) => ({
+      ...current,
+      cart: quantity <= 0
+        ? current.cart.filter((item) => item.listingId !== listingId)
+        : current.cart.map((item) => item.listingId === listingId ? { ...item, quantity } : item),
+    }));
   }, []);
 
   const clearCart = useCallback(() => setState((current) => ({ ...current, cart: [] })), []);
 
-  const placeOrder = useCallback((customer: Checkout) => {
-    const id = makeId("order");
+  const placeOrder = useCallback((customer: Checkout): string[] => {
+    const orderIds: string[] = [];
     setState((current) => {
-      const items = current.cart.flatMap((cartItem) => {
-        const listing = current.listings.find((entry) => entry.id === cartItem.listingId);
-        if (!listing) return [];
-        return [{ id: makeId("orderitem"), listingId: listing.id, inventoryItemId: listing.inventoryItemId, name: listing.title, quantity: cartItem.quantity, unitPrice: listing.price, lineTotal: listing.price * cartItem.quantity }];
-      });
-      const order: Order = { id, businessId: current.business.id, ...customer, status: "new", totalAmount: items.reduce((sum, item) => sum + item.lineTotal, 0), items, createdAt: new Date().toISOString(), stockReduced: false };
-      return { ...current, orders: [order, ...current.orders], cart: [] };
+      if (current.cart.length === 0) return current;
+
+      // Group cart items by storeId
+      const byStore = new Map<string, typeof current.cart>();
+      for (const item of current.cart) {
+        const list = byStore.get(item.storeId) ?? [];
+        list.push(item);
+        byStore.set(item.storeId, list);
+      }
+
+      // Validate all stock atomically before any mutation
+      for (const [storeId, items] of byStore) {
+        for (const cartItem of items) {
+          const inv = current.inventory.find((i) => i.id === cartItem.inventoryItemId && i.businessId === storeId);
+          if (!inv || inv.quantity < cartItem.quantity) return current;
+        }
+      }
+
+      let next = { ...current };
+      for (const [storeId, items] of byStore) {
+        const orderId = makeId("ord");
+        orderIds.push(orderId);
+        const orderItems = items.map((cartItem) => ({
+          id: makeId("oi"),
+          listingId: cartItem.listingId,
+          inventoryItemId: cartItem.inventoryItemId,
+          name: cartItem.productName,
+          quantity: cartItem.quantity,
+          unitPrice: cartItem.price,
+          lineTotal: cartItem.price * cartItem.quantity,
+        }));
+        const order: Order = {
+          id: orderId,
+          businessId: storeId,
+          ...customer,
+          status: "new",
+          totalAmount: orderItems.reduce((sum, i) => sum + i.lineTotal, 0),
+          items: orderItems,
+          createdAt: new Date().toISOString(),
+          stockReduced: false,
+        };
+        next = { ...next, orders: [order, ...next.orders] };
+      }
+      return { ...next, cart: [] };
     });
-    return id;
+    return orderIds;
   }, []);
 
   const updateOrderStatus = useCallback((id: string, status: Order["status"]) => {
@@ -155,7 +234,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((current) => {
       const order = current.orders.find((entry) => entry.id === id);
       if (!order) { response = { ok: false, message: "Order not found." }; return current; }
-      if (status !== "accepted" || order.stockReduced) return { ...current, orders: current.orders.map((entry) => entry.id === id ? { ...entry, status } : entry) };
+      if (status !== "accepted" || order.stockReduced) {
+        return { ...current, orders: current.orders.map((entry) => entry.id === id ? { ...entry, status } : entry) };
+      }
       const unavailable = order.items.find((orderItem) => (current.inventory.find((item) => item.id === orderItem.inventoryItemId)?.quantity ?? 0) < orderItem.quantity);
       if (unavailable) { response = { ok: false, message: `${unavailable.name} does not have enough stock.` }; return current; }
       const inventory = current.inventory.map((item) => {
@@ -163,7 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return ordered ? { ...item, quantity: item.quantity - ordered.quantity } : item;
       });
       const lowStock = inventory.filter((item) => order.items.some((entry) => entry.inventoryItemId === item.id) && item.quantity <= item.lowStockThreshold);
-      const workflow = current.workflows.find((entry) => entry.triggerType === "ORDER_ACCEPTED");
+      const workflow = current.workflows.find((entry) => entry.triggerType === "ORDER_ACCEPTED" && entry.businessId === order.businessId);
       const execution = workflow ? {
         id: makeId("exec"), workflowId: workflow.id, status: "success" as const, trigger: "ORDER_ACCEPTED", startedAt: new Date().toISOString(),
         nodes: [
@@ -178,38 +259,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const approveWorkflowExecution = useCallback((executionId: string) => {
-    const execution = state.executions.find((entry) => entry.id === executionId);
-    if (!execution) return { ok: false, message: "Execution not found." };
-    if (execution.status !== "waiting_for_human") return { ok: false, message: "This execution is not waiting for approval." };
+    let result = { ok: true, message: "Listing approved, published, and workflow completed." };
+    setState((current) => {
+      const execution = current.executions.find((e) => e.id === executionId);
+      if (!execution) { result = { ok: false, message: "Execution not found." }; return current; }
+      const listingNode = execution.nodes.find((n) => n.nodeType === "CREATE_DRAFT_LISTING");
+      const listingId = listingNode?.output?.listingId as string | undefined;
+      if (!listingId) { result = { ok: false, message: "No listing linked to this execution." }; return current; }
+      const listing = current.listings.find((l) => l.id === listingId);
+      if (!listing) { result = { ok: false, message: "Draft listing not found." }; return current; }
+      if (listing.price <= 0) { result = { ok: false, message: "Set a product price before approving this listing." }; return current; }
+      const approvedAt = new Date().toISOString();
+      return {
+        ...current,
+        listings: current.listings.map((l) => l.id === listingId ? { ...l, isPublished: true } : l),
+        executions: current.executions.map((e) => e.id === executionId ? {
+          ...e,
+          status: "success" as const,
+          nodes: e.nodes.map((n) => n.status === "waiting_for_human" ? { ...n, nodeName: "Seller approved and published listing", status: "success" as const, output: { listingId, published: true, approvedAt }, timestamp: approvedAt } : n),
+        } : e),
+      };
+    });
+    return result;
+  }, []);
 
-    const approvalNode = execution.nodes.find((node) => node.status === "waiting_for_human");
-    const listingId = typeof approvalNode?.input.listingId === "string" ? approvalNode.input.listingId : undefined;
-    const listing = state.listings.find((entry) => entry.id === listingId);
-    if (!approvalNode || !listing) return { ok: false, message: "The draft listing linked to this approval could not be found." };
-    if (listing.price <= 0) return { ok: false, message: "Set a product price before approving this listing." };
-
-    const approvedAt = new Date().toISOString();
+  const updateBusiness = useCallback((storeId: string, patch: Partial<Business>) => {
     setState((current) => ({
       ...current,
-      listings: current.listings.map((entry) => entry.id === listing.id ? { ...entry, isPublished: true } : entry),
-      executions: current.executions.map((entry) => entry.id === executionId ? {
-        ...entry,
-        status: "success",
-        nodes: entry.nodes.map((node) => node.id === approvalNode.id ? {
-          ...node,
-          nodeName: "Seller approved and published listing",
-          status: "success",
-          output: { listingId: listing.id, published: true, approvedAt },
-          timestamp: approvedAt,
-        } : node),
-      } : entry),
+      stores: current.stores.map((s) => s.id === storeId ? { ...s, ...patch } : s),
     }));
-    return { ok: true, message: "Listing approved, published, and workflow completed." };
-  }, [state.executions, state.listings]);
-  const updateBusiness = useCallback((business: Partial<Business>) => setState((current) => ({ ...current, business: { ...current.business, ...business } })), []);
+  }, []);
+
   const resetDemo = useCallback(() => setState(structuredClone(initialState)), []);
 
-  const value = useMemo(() => ({ state, hydrated, addInventory, updateInventory, publishItem, saveListing, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo }), [state, hydrated, addInventory, updateInventory, publishItem, saveListing, addToCart, setCartQuantity, clearCart, placeOrder, updateOrderStatus, approveWorkflowExecution, updateBusiness, resetDemo]);
+  const value = useMemo(() => ({
+    state, hydrated, currentStoreId, setCurrentStoreId,
+    getStore, getStoreInventory, getStoreListings, getStoreOrders,
+    addInventory, updateInventory, publishItem, saveListing,
+    addToCart, removeFromCart, setCartQuantity, clearCart,
+    placeOrder, updateOrderStatus, approveWorkflowExecution,
+    updateBusiness, resetDemo,
+  }), [
+    state, hydrated, currentStoreId,
+    getStore, getStoreInventory, getStoreListings, getStoreOrders,
+    addInventory, updateInventory, publishItem, saveListing,
+    addToCart, removeFromCart, setCartQuantity, clearCart,
+    placeOrder, updateOrderStatus, approveWorkflowExecution,
+    updateBusiness, resetDemo,
+  ]);
+
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
@@ -218,4 +316,3 @@ export function useApp() {
   if (!context) throw new Error("useApp must be used inside AppProvider");
   return context;
 }
-

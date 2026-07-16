@@ -1,89 +1,149 @@
-"use client";
-
 import Link from "next/link";
-import { ArrowRight, Bot, Box, ScanLine, ShieldCheck, ShoppingBag, Sparkles, Store, Workflow } from "lucide-react";
-import { Logo } from "@/components/logo";
-import { useApp } from "@/components/app-provider";
+import { ArrowRight, BarChart3, CheckCircle2, Package, ScanLine, ShoppingBag, Sparkles, Store, Zap } from "lucide-react";
+
+const businesses = [
+  { type: "Salon", icon: "✂️", name: "Urban Glow Salon", items: "4 products", orders: "0 orders" },
+  { type: "Café", icon: "☕", name: "Corner Café", items: "4 products", orders: "1 order" },
+  { type: "Grocery", icon: "🛒", name: "FreshMart", items: "4 products", orders: "1 order" },
+];
+
+const steps = [
+  { icon: ScanLine, step: "01", title: "Scan any product", body: "Upload a photo, scan a barcode, or describe the label. Tesseract OCR + Gemini vision extract everything in seconds." },
+  { icon: CheckCircle2, step: "02", title: "Review & approve", body: "AI shows a confidence score. You see exactly what it extracted and why. Edit anything before saving." },
+  { icon: Store, step: "03", title: "Storefront goes live", body: "One approval click publishes your product to a public storefront. Customers can browse, add to cart, and order." },
+  { icon: Zap, step: "04", title: "Workflows handle the rest", body: "Every action — scan, order, low stock — triggers a logged automation. Full audit trail, always human-controlled." },
+];
 
 const features = [
-  { icon: ScanLine, title: "AI product scanning", text: "Turn a product photo or label into clean, structured inventory data." },
-  { icon: Box, title: "Business-specific inventory", text: "Start with categories designed for salons, cafés, and grocery stores." },
-  { icon: Store, title: "Public storefront", text: "Publish selected inventory so customers can browse and place orders." },
-  { icon: Workflow, title: "Workflow automation", text: "Connect scans, listings, orders, and stock updates into one flow." },
-  { icon: Sparkles, title: "Low-stock alerts", text: "See which products need restocking based on your thresholds." },
-  { icon: ShieldCheck, title: "Review before saving", text: "Edit every extracted field before it reaches inventory." },
+  { icon: Sparkles, title: "Multimodal AI extraction", body: "Gemini 2.0 Flash reads the actual image + OCR text together. Confidence scoring tells you exactly how sure it is." },
+  { icon: Package, title: "Barcode lookup", body: "Scan any barcode — Open Food Facts fills in product name, brand, and category instantly. No typing." },
+  { icon: BarChart3, title: "Real-time inventory", body: "Stock reduces atomically on order acceptance. Low stock alerts trigger before you run out." },
+  { icon: ShoppingBag, title: "Built-in storefront", body: "Every business gets a public product page. Search, filter, cart drawer, checkout — no separate e-commerce needed." },
+  { icon: Zap, title: "Workflow automation", body: "PRODUCT_SCANNED → ORDER_ACCEPTED → LOW_STOCK workflows run automatically with full node-level execution logs." },
+  { icon: CheckCircle2, title: "Human-in-the-loop", body: "Nothing publishes without seller approval. AI assists, you decide. Correction logs track every change." },
 ];
 
 export default function LandingPage() {
-  const { state } = useApp();
   return (
-    <div style={{ background: "#fff", minHeight: "100vh" }}>
-      <header className="landing-nav">
-        <Logo />
-        <nav><a href="#features">Features</a><a href="#how">How it works</a><Link href="/auth">Sign in</Link></nav>
-        <Link href="/dashboard" className="btn btn-primary">Try demo <ArrowRight size={16} /></Link>
-      </header>
-      <main>
-        <section className="hero">
-          <div className="hero-copy">
-            <h1>Turn physical stock into <span>inventory, storefronts, and automated workflows.</span></h1>
-            <p>Photograph a product, review the extracted details, add it to inventory, publish it to your store, and track what happens after each order.</p>
-            <div className="hero-actions">
-              <Link href="/dashboard" className="btn btn-primary">Try demo dashboard <ArrowRight size={16} /></Link>
-              <Link href={`/store/${state.business.slug}`} className="btn btn-secondary">View demo store</Link>
-            </div>
+    <div style={{ minHeight: "100vh", background: "#FFFFFF" }}>
+      {/* Nav */}
+      <nav style={{ borderBottom: "1px solid #e1e9e9", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", background: "white", position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 6, background: "#2C645B", display: "grid", placeItems: "center" }}>
+            <ScanLine size={16} color="white" />
           </div>
-          <div className="hero-visual">
-            <div className="visual-window">
-              <div className="window-top"><i /><i /><i /><span>scanmart.ai/scan</span></div>
-              <div className="scan-demo">
-                <div className="scan-preview"><div className="bottle"><span>DOVE</span><b>Intense<br />Repair</b><small>SHAMPOO</small></div><div className="scan-corners" /></div>
-                <div className="result-panel"><div className="result-head"><div><small>AI EXTRACTION</small><strong>Product recognized</strong></div><span>94% confident</span></div>
-                  <label>Product name</label><div className="fake-input">Dove Intense Repair Shampoo</div>
-                  <div className="fake-grid"><div><label>Category</label><div className="fake-input">Haircare</div></div><div><label>Quantity</label><div className="fake-input">1 pcs</div></div></div>
-                  <button><Sparkles size={15} /> Confirm & add to inventory</button>
-                </div>
+          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-.02em" }}>ScanMart AI</span>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Link href="/onboarding" className="btn btn-secondary" style={{ minHeight: 36, fontSize: 13 }}>Try demo</Link>
+          <Link href="/dashboard" className="btn btn-primary" style={{ minHeight: 36, fontSize: 13 }}>Open dashboard</Link>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section style={{ padding: "80px 32px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F0FAF5", border: "1px solid #73AB9540", borderRadius: 20, padding: "6px 14px", marginBottom: 28, fontSize: 13, fontWeight: 700, color: "#2C645B" }}>
+          <Sparkles size={13} />
+          Powered by Gemini 2.0 Flash · Tesseract OCR · Open Food Facts
+        </div>
+        <h1 style={{ fontSize: "clamp(36px, 6vw, 68px)", fontWeight: 900, letterSpacing: "-.05em", lineHeight: 1.05, margin: "0 0 20px", color: "#092922" }}>
+          Scan a label.<br />
+          <span style={{ color: "#2C645B" }}>Your inventory updates itself.</span>
+        </h1>
+        <p style={{ fontSize: 18, color: "#65777a", maxWidth: 560, margin: "0 auto 36px", lineHeight: 1.6 }}>
+          ScanMart AI turns any product photo or barcode into a live inventory record and public storefront — in under 10 seconds.
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <Link href="/onboarding" className="btn btn-primary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
+            <ScanLine size={17} /> Start scanning free <ArrowRight size={15} />
+          </Link>
+          <Link href="/store/urban-glow" className="btn btn-secondary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
+            <Store size={17} /> See live storefront
+          </Link>
+        </div>
+      </section>
+
+      {/* Business previews */}
+      <section style={{ padding: "0 32px 60px", maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          {businesses.map((b) => (
+            <div key={b.type} style={{ border: "1px solid #e1e9e9", borderRadius: 10, padding: 20, background: "white" }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>{b.icon}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "#2C645B", textTransform: "uppercase", marginBottom: 4 }}>{b.type}</div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>{b.name}</div>
+              <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                <span style={{ fontSize: 12, color: "#65777a" }}>{b.items}</span>
+                <span style={{ fontSize: 12, color: "#65777a" }}>{b.orders}</span>
               </div>
             </div>
-            <div className="float-card float-one"><div><Bot size={18} /></div><span><b>AI extracted 8 fields</b><small>Ready for your review</small></span></div>
-            <div className="float-card float-two"><div><ShoppingBag size={18} /></div><span><b>Storefront updated</b><small>Product is now live</small></span></div>
+          ))}
+        </div>
+        <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "#A4B4CC" }}>
+          Built for salons, cafés, grocery stores — any small business with a product shelf.
+        </p>
+      </section>
+
+      {/* How it works */}
+      <section style={{ padding: "60px 32px", background: "#F6F6F6", borderTop: "1px solid #e1e9e9" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>How it works</div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-.04em", margin: 0 }}>From shelf to storefront in 4 steps</h2>
           </div>
-        </section>
-        <section className="logo-strip"><b>For salons, cafés, and grocery stores.</b></section>
-        <section id="features" className="feature-section">
-          <div className="section-intro"><h2>From product scan to order.</h2><p>Scan, review, stock, publish, and fulfil orders in one place.</p></div>
-          <div className="feature-grid">{features.map(({ icon: Icon, title, text }) => <article key={title}><div className="feature-icon"><Icon size={21} /></div><h3>{title}</h3><p>{text}</p></article>)}</div>
-        </section>
-        <section id="how" className="flow-section">
-          <div><h2>Scan once. Review before publishing.</h2><p>Product details stay editable, stock changes stay visible, and every automation run is recorded.</p><Link href="/scan" className="btn btn-primary">Scan your first product</Link></div>
-          <div className="steps">{["Capture a product", "Review AI details", "Publish to your store", "Automate after every order"].map((step, index) => <div className="step" key={step}><span>{index + 1}</span><div><b>{step}</b><small>{["Use your phone, webcam, or upload an image.", "Correct anything before it reaches inventory.", "Create a listing with a single click.", "Reduce stock and surface low-stock alerts."][index]}</small></div></div>)}</div>
-        </section>
-      </main>
-      <footer><Logo /><span>Turn physical stock into inventory, storefronts, and automated workflows.</span><span>© 2026 ScanMart AI</span></footer>
-      <style jsx>{`
-        .landing-nav { max-width: 1240px; height: 78px; margin: auto; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
-        .landing-nav nav { display: flex; gap: 30px; color: #5e6962; font-size: 14px; font-weight: 650; }
-        .hero { max-width: 1240px; margin: auto; padding: 75px 24px 95px; display: grid; grid-template-columns: .88fr 1.12fr; gap: 65px; align-items: center; }
-        .hero h1 { font-size: clamp(47px, 5vw, 70px); line-height: 1.02; letter-spacing: -.065em; margin: 24px 0; } .hero h1 span { color: #2C645B; }
-        .hero-copy > p { color: #657169; font-size: 18px; line-height: 1.7; max-width: 600px; }
-        .hero-actions { display: flex; gap: 12px; margin-top: 30px; } .hero-actions :global(.btn) { min-height: 50px; padding: 0 20px; }
-        .hero-visual { position: relative; } .visual-window { border: 1px solid #dce4de; border-radius: 6px; overflow: hidden; box-shadow: 0 35px 70px rgb(24 61 39 / 15%); transform: rotate(1deg); }
-        .window-top { height: 40px; display: flex; align-items: center; gap: 6px; background: #f8faf8; padding: 0 13px; border-bottom: 1px solid #e7ebe8; } .window-top i { width: 8px; height: 8px; border-radius: 50%; background: #d6ddd8; }.window-top span { margin-left: 10px; font-size: 9px; color: #9aa39d; }
-        .scan-demo { background: #fff; padding: 22px; display: grid; grid-template-columns: .9fr 1.1fr; gap: 18px; }
-        .scan-preview { position: relative; min-height: 350px; background: #eff2ef; border-radius: 6px; display: grid; place-items: center; overflow: hidden; }
-        .bottle { width: 115px; height: 240px; border-radius: 6px 6px 6px 6px; background: linear-gradient(145deg,#fdfefe,#dae9df); box-shadow: 0 18px 30px #bcc9c0; display: flex; flex-direction: column; align-items: center; padding-top: 48px; color: #1e5171; transform: rotate(-4deg); } .bottle span { font-size: 16px; font-weight: 900; }.bottle b { font-size: 23px; line-height: .9; text-align: center; margin: 26px 0 12px; color: #18455f; }.bottle small { font-size: 8px; font-weight: 800; letter-spacing: .15em; }
-        .scan-corners { position: absolute; inset: 30px; border: 2px solid #73AB95; border-radius: 5px; opacity: .65; }
-        .result-panel { padding: 7px; } .result-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 26px; }.result-head small,.result-head strong { display:block }.result-head small { font-size: 8px; color:#7e8982; letter-spacing:.1em; font-weight:800 }.result-head strong{margin-top:5px;font-size:14px}.result-head > span { font-size:8px;background:#F6F6F6;color:#2C645B;padding:5px 7px;border-radius: 4px;font-weight:800}
-        .result-panel label { display:block;font-size:8px;font-weight:800;color:#6f7b73;margin:12px 0 5px}.fake-input{border:1px solid #e1e6e2;border-radius: 5px;padding:9px;font-size:9px}.fake-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.result-panel button{margin-top:22px;width:100%;border:0;border-radius: 5px;background:#2C645B;color:white;padding:11px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px}
-        .float-card { position:absolute;display:flex;gap:10px;align-items:center;background:white;border:1px solid #e1e7e2;border-radius: 5px;padding:11px 14px;box-shadow:0 12px 30px rgb(30 55 39 / 12%)}.float-card>div{width:32px;height:32px;border-radius: 5px;background:#F6F6F6;color:#2C645B;display:grid;place-items:center}.float-card b,.float-card small{display:block}.float-card b{font-size:10px}.float-card small{font-size:8px;color:#7b857e;margin-top:3px}.float-one{left:-28px;top:50px}.float-two{right:-15px;bottom:42px}
-        .logo-strip { border-top:1px solid #edf0ed;border-bottom:1px solid #edf0ed;min-height:94px;display:flex;align-items:center;justify-content:center;gap:70px;color:#909a93;font-size:12px}.logo-strip b{font-size:15px;color:#56615a}
-        .feature-section { max-width:1160px;margin:auto;padding:110px 24px}.section-intro{text-align:center;max-width:680px;margin:0 auto 48px}.section-intro h2,.flow-section h2{font-size:40px;letter-spacing:-.05em;margin:14px 0;color:#092922}.section-intro p,.flow-section>div>p{color:#4f625e;line-height:1.7;font-weight:500}.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.feature-grid article{position:relative;overflow:hidden;background:#fff;border:1px solid #A4B4CC;border-radius: 6px;padding:27px;box-shadow:0 10px 30px rgb(9 41 34 / 7%);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.feature-grid article::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:#73AB95}.feature-grid article:nth-child(3n+2)::before{background:#EB774D}.feature-grid article:nth-child(3n)::before{background:#7CD4AC}.feature-grid article:hover{transform:translateY(-4px);border-color:#73AB95;box-shadow:0 18px 42px rgb(9 41 34 / 13%)}.feature-grid h3{font-size:16px;font-weight:750;color:#092922;margin:19px 0 9px}.feature-grid p{font-size:13px;font-weight:500;color:#4f625e;line-height:1.65}.feature-icon{width:46px;height:46px;display:grid;place-items:center;border-radius: 5px;background:#2C645B;color:#fff;box-shadow:0 7px 16px rgb(44 100 91 / 20%)}
-        .flow-section{max-width:1160px;margin:0 auto 100px;background:#092922;color:white;border-radius: 6px;padding:60px;display:grid;grid-template-columns:1fr 1fr;gap:90px}.flow-section .eyebrow{color:#7CD4AC}.flow-section>div>p{color:#b5c9bc;margin-bottom:28px}.flow-section .btn-primary{background:white;color:#2C645B}.steps{display:flex;flex-direction:column;gap:12px}.step{display:flex;gap:16px;align-items:center;background:rgb(255 255 255 / 7%);border:1px solid rgb(255 255 255 / 10%);padding:14px;border-radius: 5px}.step>span{width:32px;height:32px;display:grid;place-items:center;border-radius: 5px;background:#2C645B;color:#7CD4AC;font-weight:800;font-size:12px}.step b,.step small{display:block}.step b{font-size:13px}.step small{font-size:10px;color:#aebfb4;margin-top:4px}
-        footer{border-top:1px solid #e8ece9;max-width:1240px;margin:auto;padding:30px 24px;display:flex;justify-content:space-between;align-items:center;color:#7b857e;font-size:11px}
-        @media(max-width:900px){.hero{grid-template-columns:1fr;padding-top:40px}.hero-copy{text-align:center}.hero-copy>p{margin-left:auto;margin-right:auto}.hero-actions{justify-content:center}.feature-grid{grid-template-columns:repeat(2,1fr)}.flow-section{margin-left:16px;margin-right:16px;grid-template-columns:1fr;gap:35px;padding:35px}.landing-nav nav{display:none}.logo-strip{gap:25px;flex-wrap:wrap;padding:22px}.float-one{left:0}.float-two{right:0}}@media(max-width:600px){.hero h1{font-size:44px}.scan-demo{grid-template-columns:1fr}.result-panel{display:none}.scan-preview{min-height:300px}.feature-grid{grid-template-columns:1fr}.feature-section{padding:75px 16px}.landing-nav>.btn{display:none}.hero{padding-left:16px;padding-right:16px}.hero-actions{flex-direction:column}.float-card{display:none}.section-intro h2,.flow-section h2{font-size:32px}footer{flex-direction:column;gap:18px;text-align:center}}
-      `}</style>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+            {steps.map(({ icon: Icon, step, title, body }) => (
+              <div key={step} style={{ background: "white", border: "1px solid #e1e9e9", borderRadius: 10, padding: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 6, background: "#F0FAF5", display: "grid", placeItems: "center", color: "#2C645B" }}>
+                    <Icon size={16} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#A4B4CC", letterSpacing: ".1em" }}>{step}</span>
+                </div>
+                <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700 }}>{title}</h3>
+                <p style={{ margin: 0, fontSize: 13, color: "#65777a", lineHeight: 1.6 }}>{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section style={{ padding: "60px 32px", maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Features</div>
+          <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-.04em", margin: 0 }}>AI is part of the workflow, not a chatbox</h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+          {features.map(({ icon: Icon, title, body }) => (
+            <div key={title} style={{ border: "1px solid #e1e9e9", borderRadius: 10, padding: 22, background: "white" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 6, background: "#F0FAF5", display: "grid", placeItems: "center", color: "#2C645B", marginBottom: 14 }}>
+                <Icon size={17} />
+              </div>
+              <h3 style={{ margin: "0 0 7px", fontSize: 14, fontWeight: 700 }}>{title}</h3>
+              <p style={{ margin: 0, fontSize: 13, color: "#65777a", lineHeight: 1.6 }}>{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ padding: "60px 32px", background: "#092922", textAlign: "center" }}>
+        <h2 style={{ color: "white", fontSize: 36, fontWeight: 800, letterSpacing: "-.04em", margin: "0 0 14px" }}>
+          Ready to scan your first product?
+        </h2>
+        <p style={{ color: "#73AB95", fontSize: 16, margin: "0 0 32px" }}>
+          No sign-up needed. Full demo with real AI extraction.
+        </p>
+        <Link href="/onboarding" className="btn" style={{ background: "#EB774D", color: "white", minHeight: 52, fontSize: 16, padding: "0 36px", borderColor: "#EB774D" }}>
+          <ScanLine size={18} /> Try ScanMart AI free <ArrowRight size={15} />
+        </Link>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ padding: "24px 32px", borderTop: "1px solid #e1e9e9", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#A4B4CC" }}>
+        <span style={{ fontWeight: 700, color: "#2C645B" }}>ScanMart AI</span>
+        <span>Built for small businesses · Powered by Gemini 2.0 Flash</span>
+      </footer>
     </div>
   );
 }
-
-
