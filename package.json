@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/manrope": "^5.2.8",
     "@google/genai": "^2.10.0",
     "@zxing/browser": "^0.2.0",

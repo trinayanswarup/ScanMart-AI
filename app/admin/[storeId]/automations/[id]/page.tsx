@@ -1,43 +1,198 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock3, Play, X, Zap } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock3, Code, Play, X, Zap, Activity } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useApp } from "@/components/app-provider";
 import { StatusBadge } from "@/components/status-badge";
 import type { WorkflowNodeExecution } from "@/types";
 
-function NodeTrace({ node, last }: { node: WorkflowNodeExecution; last: boolean }) {
+function NodeTrace({ node, last, devMode }: { node: WorkflowNodeExecution; last: boolean; devMode: boolean }) {
   const [open, setOpen] = useState(false);
   const Icon = node.status === "success" ? Check : node.status === "failed" ? X : node.status === "waiting_for_human" ? Clock3 : Circle;
-  return <div style={{ position: "relative", paddingLeft: 52, paddingBottom: last ? 0 : 24 }}>
-    {!last && <i style={{ position: "absolute", top: 35, bottom: -4, left: 17, width: 1, background: "#dce4de" }} />}
-    <div style={{ position: "absolute", left: 0, top: 0, width: 35, height: 35, display: "grid", placeItems: "center", borderRadius: 5, color: node.status === "success" ? "#2C645B" : node.status === "failed" ? "#F85458" : "#9D552C", background: node.status === "success" ? "#F6F6F6" : node.status === "failed" ? "#fff0ef" : "#fff5df", border: "3px solid white", boxShadow: "0 0 0 1px #dfe6e1" }}><Icon size={16} /></div>
-    <div className="subtle-card" style={{ overflow: "hidden" }}><button onClick={() => setOpen(!open)} style={{ width: "100%", border: 0, background: "transparent", display: "flex", alignItems: "center", justifyContent: "space-between", padding: 15, textAlign: "left" }}><div><strong style={{ fontSize: 15 }}>{node.nodeName}</strong><span className="muted" style={{ display: "block", fontSize: 11, marginTop: 5 }}>{node.nodeType.replaceAll("_", " ")} · {new Date(node.timestamp).toLocaleTimeString()}</span></div><div style={{ display: "flex", alignItems: "center", gap: 9 }}><StatusBadge status={node.status} />{open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}</div></button>{open && <div style={{ borderTop: "1px solid #e3e8e4", padding: 15 }}><div className="grid-2"><div><span className="label">Input JSON</span><pre style={{ margin: 0, background: "#092922", color: "#cde5d6", borderRadius: 5, padding: 13, overflow: "auto", fontSize: 10 }}>{JSON.stringify(node.input, null, 2)}</pre></div><div><span className="label">Output JSON</span><pre style={{ margin: 0, background: "#092922", color: "#cde5d6", borderRadius: 5, padding: 13, overflow: "auto", fontSize: 10 }}>{JSON.stringify(node.output ?? {}, null, 2)}</pre></div></div>{node.error && <div className="error-text">{node.error}</div>}</div>}</div>
-  </div>;
+  
+  let friendlyName = node.nodeName;
+  let friendlyDesc = `Completed at ${new Date(node.timestamp).toLocaleTimeString()}`;
+  
+  if (node.nodeName === "AI generated product description") {
+    friendlyName = "AI drafted listing details";
+  } else if (node.nodeName === "Draft listing created") {
+    friendlyName = "Product record created";
+  } else if (node.nodeName === "Waiting for seller approval") {
+    friendlyName = "Pending your review";
+    friendlyDesc = "Waiting for approval";
+  }
+
+  return (
+    <div style={{ position: "relative", paddingLeft: 44, paddingBottom: last ? 0 : 32 }}>
+      {!last && <i style={{ position: "absolute", top: 32, bottom: -8, left: 15, width: 2, background: "var(--line)" }} />}
+      
+      <div style={{ position: "absolute", left: 0, top: 0, width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "50%", 
+                    color: node.status === "success" ? "white" : node.status === "failed" ? "white" : "var(--amber)", 
+                    background: node.status === "success" ? "var(--brand)" : node.status === "failed" ? "var(--danger)" : "#FEF3C7", 
+                    border: "2px solid white", boxShadow: "0 0 0 1px var(--line)", zIndex: 2 }}>
+        <Icon size={14} strokeWidth={3} />
+      </div>
+      
+      <div>
+        <strong style={{ fontSize: 15, color: "var(--ink)", display: "block" }}>{friendlyName}</strong>
+        <span style={{ color: "var(--muted)", fontSize: 13, marginTop: 4, display: "block" }}>{friendlyDesc}</span>
+        
+        {devMode && (
+          <div className="card" style={{ marginTop: 12, overflow: "hidden", border: "1px solid var(--line)" }}>
+            <button onClick={() => setOpen(!open)} style={{ width: "100%", border: 0, background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", textAlign: "left", cursor: "pointer" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", display: "flex", gap: 6, alignItems: "center" }}><Code size={14} /> Developer Log: {node.nodeType}</span>
+              {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+            {open && (
+              <div style={{ borderTop: "1px solid var(--line)", padding: 14, background: "#0F172A", color: "#E2E8F0" }}>
+                <div className="grid-2" style={{ gap: 14 }}>
+                  <div>
+                    <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "#94A3B8", marginBottom: 6, display: "block" }}>Input JSON</span>
+                    <pre style={{ margin: 0, fontSize: 11, overflow: "auto", fontFamily: "monospace" }}>{JSON.stringify(node.input, null, 2)}</pre>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".1em", color: "#94A3B8", marginBottom: 6, display: "block" }}>Output JSON</span>
+                    <pre style={{ margin: 0, fontSize: 11, overflow: "auto", fontFamily: "monospace" }}>{JSON.stringify(node.output ?? {}, null, 2)}</pre>
+                  </div>
+                </div>
+                {node.error && <div style={{ background: "rgba(239, 68, 68, 0.1)", color: "#F87171", padding: 12, borderRadius: 6, marginTop: 12, fontSize: 12 }}>{node.error}</div>}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminAutomationDetailPage() {
   const { storeId, id } = useParams<{ storeId: string; id: string }>();
   const { state, approveWorkflowExecution } = useApp();
+  const [devMode, setDevMode] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
+  
   const workflow = state.workflows.find((item) => item.id === id);
   const executions = state.executions.filter((item) => item.workflowId === id);
   const [selectedId, setSelectedId] = useState(executions[0]?.id);
-  const [actionMessage, setActionMessage] = useState("");
+  
   const selected = executions.find((item) => item.id === selectedId) || executions[0];
-  if (!workflow) return <div className="page-wrap"><div className="empty">Workflow not found.</div></div>;
-  return <div className="page-wrap"><Link href={`/admin/${storeId}/automations`} className="btn btn-ghost" style={{ paddingLeft: 0 }}><ArrowLeft size={16} />Back to automations</Link><div className="page-header" style={{ marginTop: 12 }}><div><div style={{ display: "flex", gap: 10, alignItems: "center" }}><h1>{workflow.name}</h1><span className="badge badge-green">Active</span></div><p>{workflow.description}</p></div><button className="btn btn-secondary" onClick={() => alert("This workflow runs automatically when its trigger occurs.")}><Play size={15} />Manual run info</button></div>
-    <div className="automation-layout"><aside style={{ display: "grid", gap: 18, alignContent: "start" }}><section className="card" style={{ padding: 24 }}><h2 className="section-title">Workflow definition</h2><div style={{ marginTop: 18 }}><span className="label">Trigger</span><span className="badge badge-gray">{workflow.triggerType.replaceAll("_", " ")}</span></div><div style={{ marginTop: 20 }}><span className="label">Sequential nodes</span><div style={{ display: "grid", gap: 8 }}>{workflow.nodeNames.map((name, index) => <div className="subtle-card" style={{ padding: 13, display: "flex", alignItems: "center", gap: 11, fontSize: 13 }} key={name}><span style={{ width: 24, height: 24, borderRadius: 5, background: "#F6F6F6", color: "#2C645B", display: "grid", placeItems: "center", fontWeight: 800 }}>{index + 1}</span>{name}</div>)}</div></div></section><section className="card" style={{ padding: 24 }}><h2 className="section-title">Execution history</h2><div style={{ display: "grid", gap: 8, marginTop: 16 }}>{executions.length ? executions.map((execution) => <button key={execution.id} onClick={() => setSelectedId(execution.id)} className="subtle-card" style={{ padding: 15, textAlign: "left", borderColor: selected?.id === execution.id ? "#2C645B" : undefined, background: selected?.id === execution.id ? "#F6F6F6" : undefined }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><strong style={{ fontSize: 13 }}>{new Date(execution.startedAt).toLocaleString()}</strong><StatusBadge status={execution.status} /></div><span className="muted" style={{ display: "block", fontSize: 11, marginTop: 7 }}>{execution.nodes.length} node executions</span></button>) : <p className="muted" style={{ fontSize: 12 }}>No executions yet. Trigger this workflow through the product flow.</p>}</div></section></aside>
-    <section className="card" style={{ padding: 24, alignSelf: "start" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 20, borderBottom: "1px solid #e5eae6", marginBottom: 24 }}><div><div style={{ display: "flex", gap: 9, alignItems: "center" }}><div className="empty-icon" style={{ margin: 0, width: 38, height: 38 }}><Zap size={18} /></div><div><h2 className="section-title">Execution trace</h2><span className="muted" style={{ fontSize: 10 }}>{selected ? `Started ${new Date(selected.startedAt).toLocaleString()}` : "No run selected"}</span></div></div></div>{selected && <StatusBadge status={selected.status} />}</div>
-      {selected ? <><div className="notice" style={{ marginBottom: 18 }}><strong>Trigger received:</strong> {selected.trigger.replaceAll("_", " ")}. Every action below was persisted as it ran.</div>{selected.status === "waiting_for_human" && <div className="approval-panel"><div><strong>Seller approval required</strong><p>Review the draft listing, then approve it to publish the product and complete this workflow.</p></div><button className="btn btn-primary" onClick={() => { const result = approveWorkflowExecution(selected.id); setActionMessage(result.message); }}><CheckCircle2 size={17} />Approve & continue</button></div>}{actionMessage && <div className={actionMessage.startsWith("Listing approved") ? "notice" : "error-text"} style={{ marginBottom: 18 }}>{actionMessage}</div>}{selected.nodes.map((node, index) => <NodeTrace node={node} last={index === selected.nodes.length - 1} key={node.id} />)}</> : <div className="empty"><div className="empty-icon"><Zap /></div><h3>No execution trace yet</h3><p className="muted">The next matching business event will appear here step by step.</p></div>}</section></div>
-<style jsx>{`
-      .automation-layout { display: grid; grid-template-columns: minmax(320px, .72fr) minmax(0, 1.45fr); gap: 22px; align-items: start; }
-      .approval-panel { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 18px; margin-bottom: 18px; border: 1px solid #EB774D; border-left: 5px solid #EB774D; background: #fffaf7; }
-      .approval-panel strong { display: block; font-size: 15px; color: #092922; }
-      .approval-panel p { margin: 6px 0 0; color: #4f625e; font-size: 13px; line-height: 1.55; }
-      .approval-panel :global(.btn) { flex: 0 0 auto; min-height: 44px; }
-      @media (max-width: 1050px) { .automation-layout { grid-template-columns: 1fr; } }
-      @media (max-width: 650px) { .approval-panel { align-items: stretch; flex-direction: column; } .approval-panel :global(.btn) { width: 100%; } }
-    `}</style>  </div>;
+  
+  if (!workflow) return <div className="page-wrap"><div className="empty">Activity not found.</div></div>;
+
+  return (
+    <div className="page-wrap animate-fade-in" style={{ padding: "40px 32px 100px" }}>
+      <Link href={`/admin/${storeId}/automations`} className="btn btn-ghost" style={{ paddingLeft: 0, marginBottom: 20 }}>
+        <ArrowLeft size={16} /> Back to activity
+      </Link>
+      
+      <div className="page-header" style={{ marginBottom: 40, alignItems: "center" }}>
+        <div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
+            <h1 style={{ color: "var(--ink)", fontWeight: 800 }}>{workflow.name}</h1>
+          </div>
+          <p style={{ color: "var(--muted)", fontSize: 16 }}>Activity log for {workflow.name.toLowerCase()}.</p>
+        </div>
+        <button className={`btn ${devMode ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setDevMode(!devMode)}>
+          <Code size={16} /> {devMode ? 'Disable Dev Mode' : 'Developer Mode'}
+        </button>
+      </div>
+
+      <div className="grid-2" style={{ gridTemplateColumns: "1.3fr .7fr", gap: 32 }}>
+        {/* Timeline Trace */}
+        <section className="card shadow-soft" style={{ padding: 32, alignSelf: "start" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: 24, borderBottom: "1px solid var(--line)", marginBottom: 32 }}>
+            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)", display: "grid", placeItems: "center" }}>
+                <Activity size={24} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--ink)", margin: 0 }}>Activity Timeline</h2>
+                <span className="muted" style={{ fontSize: 13, marginTop: 4, display: "block" }}>
+                  {selected ? `Started ${new Date(selected.startedAt).toLocaleString()}` : "No run selected"}
+                </span>
+              </div>
+            </div>
+            {selected && <StatusBadge status={selected.status} />}
+          </div>
+
+          {selected ? (
+            <>
+              {selected.status === "waiting_for_human" && (
+                <div style={{ background: "#F0FAF5", border: "1px solid #7CD4AC", borderRadius: 8, padding: 24, marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+                  <div>
+                    <strong style={{ fontSize: 16, color: "var(--brand)", display: "block", marginBottom: 6 }}>Action required</strong>
+                    <p style={{ margin: 0, color: "var(--ink)", fontSize: 14, lineHeight: 1.5 }}>Review the draft listing, then approve it to publish the product.</p>
+                  </div>
+                  <button className="btn btn-primary shadow-glow" style={{ whiteSpace: "nowrap" }} onClick={() => { 
+                    const result = approveWorkflowExecution(selected.id); 
+                    setActionMessage(result.message); 
+                  }}>
+                    <CheckCircle2 size={16} /> Approve & publish
+                  </button>
+                </div>
+              )}
+              
+              {actionMessage && (
+                <div style={{ background: actionMessage.includes("approved") ? "#F0FAF5" : "#FEF2F2", color: actionMessage.includes("approved") ? "var(--brand)" : "var(--danger)", padding: 16, borderRadius: 8, marginBottom: 32, fontSize: 14, fontWeight: 600 }}>
+                  {actionMessage}
+                </div>
+              )}
+
+              <div style={{ paddingLeft: 10 }}>
+                {selected.nodes.map((node, index) => (
+                  <NodeTrace node={node} last={index === selected.nodes.length - 1} devMode={devMode} key={node.id} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="empty" style={{ padding: "60px 20px" }}>
+              <Activity size={40} color="var(--brand)" style={{ opacity: 0.2, margin: "0 auto 16px" }} />
+              <h3 style={{ fontSize: 18, color: "var(--ink)", fontWeight: 700 }}>No timeline yet</h3>
+              <p className="muted">The next matching event will appear here.</p>
+            </div>
+          )}
+        </section>
+
+        {/* History Sidebar */}
+        <aside style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {devMode && (
+            <section className="card shadow-soft animate-fade-in" style={{ padding: 24, border: "1px solid var(--amber)", background: "#FFFBEB" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: "#92400E", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 }}>System Details</h3>
+              <div style={{ display: "grid", gap: 12, fontSize: 13, color: "#92400E" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Trigger:</strong> <span>{workflow.triggerType}</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Nodes:</strong> <span>{workflow.nodeNames.length} defined</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}><strong>ID:</strong> <span>{workflow.id.slice(0, 8)}...</span></div>
+              </div>
+            </section>
+          )}
+          
+          <section className="card shadow-soft" style={{ padding: 24 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--ink)", marginBottom: 16 }}>Event History</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {executions.length ? executions.map((execution) => (
+                <button key={execution.id} onClick={() => setSelectedId(execution.id)} 
+                        style={{ padding: "12px 16px", textAlign: "left", borderRadius: 8, border: "1px solid", 
+                                 borderColor: selected?.id === execution.id ? "var(--brand)" : "var(--line)", 
+                                 background: selected?.id === execution.id ? "#F0FAF5" : "white", cursor: "pointer", transition: "all .2s" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <strong style={{ fontSize: 13, color: selected?.id === execution.id ? "var(--brand)" : "var(--ink)" }}>
+                      {new Date(execution.startedAt).toLocaleDateString()}
+                    </strong>
+                    <StatusBadge status={execution.status} />
+                  </div>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                    {new Date(execution.startedAt).toLocaleTimeString()}
+                  </span>
+                </button>
+              )) : (
+                <p className="muted" style={{ fontSize: 13 }}>No other events recorded.</p>
+              )}
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
 }

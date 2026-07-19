@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import "@fontsource-variable/manrope";
+import "@fontsource-variable/inter";
 import "./globals.css";
 import { AppProvider } from "@/components/app-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "ScanMart AI",
@@ -11,10 +13,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning><AppProvider>{children}</AppProvider></body>
+      <body suppressHydrationWarning>
+        <ThemeProvider>
+          <AppProvider>
+            {children}
+          </AppProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
-
-
-

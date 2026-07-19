@@ -1,148 +1,240 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight, BarChart3, CheckCircle2, Package, ScanLine, ShieldCheck, ShoppingBag, Sparkles, Store, Zap } from "lucide-react";
-
-const businesses = [
-  { type: "Salon", icon: "✂️", name: "Urban Glow Salon", items: "4 products", orders: "0 orders" },
-  { type: "Café", icon: "☕", name: "Corner Café", items: "4 products", orders: "1 order" },
-  { type: "Grocery", icon: "🛒", name: "FreshMart", items: "4 products", orders: "1 order" },
-];
-
-const steps = [
-  { icon: ScanLine, step: "01", title: "Scan any product", body: "Upload a photo, scan a barcode, or describe the label. Tesseract OCR + NVIDIA AI Vision extract everything in seconds." },
-  { icon: CheckCircle2, step: "02", title: "Review & approve", body: "AI shows a confidence score. You see exactly what it extracted and why. Edit anything before saving." },
-  { icon: Store, step: "03", title: "Storefront goes live", body: "One approval click publishes your product to a public storefront. Customers can browse, add to cart, and order." },
-  { icon: Zap, step: "04", title: "Workflows handle the rest", body: "Every action — scan, order, low stock — triggers a logged automation. Full audit trail, always human-controlled." },
-];
-
-const features = [
-  { icon: Sparkles, title: "Multimodal AI extraction", body: "NVIDIA AI Vision reads the actual image + OCR text together. Confidence scoring tells you exactly how sure it is." },
-  { icon: Package, title: "Barcode lookup", body: "Scan any barcode — Open Food Facts fills in product name, brand, and category instantly. No typing." },
-  { icon: BarChart3, title: "Real-time inventory", body: "Stock reduces atomically on order acceptance. Low stock alerts trigger before you run out." },
-  { icon: ShoppingBag, title: "Built-in storefront", body: "Every business gets a public product page. Search, filter, cart drawer, checkout — no separate e-commerce needed." },
-  { icon: Zap, title: "Workflow automation", body: "PRODUCT_SCANNED → ORDER_ACCEPTED → LOW_STOCK workflows run automatically with full node-level execution logs." },
-  { icon: CheckCircle2, title: "Human-in-the-loop", body: "Nothing publishes without seller approval. AI assists, you decide. Correction logs track every change." },
-];
+import { ArrowRight, Box, CheckCircle2, Coffee, Eye, ScanLine, Scissors, ShoppingBag, Store, Sparkles, Github } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFFFF" }}>
-      {/* Nav */}
-      <nav style={{ borderBottom: "1px solid #e1e9e9", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", background: "white", position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 6, background: "#2C645B", display: "grid", placeItems: "center" }}>
-            <ScanLine size={16} color="white" />
+    <div style={{ minHeight: "100vh", background: "var(--canvas)", overflowX: "hidden" }}>
+      {/* ─── Nav ─── */}
+      <nav style={{ padding: "0 40px", height: 80, display: "flex", alignItems: "center", justifyContent: "space-between", position: "absolute", top: 0, left: 0, right: 0, zIndex: 50 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 28, height: 28, background: "var(--ink)", display: "grid", placeItems: "center", transform: "rotate(45deg)" }}>
+            <div style={{ transform: "rotate(-45deg)" }}>
+              <ShoppingBag size={14} color="white" />
+            </div>
           </div>
-          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-.02em" }}>ScanMart AI</span>
+          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-.03em", color: "var(--ink)", textTransform: "uppercase" }}>ScanMart Group</span>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Link href="/shop" className="btn btn-secondary" style={{ minHeight: 36, fontSize: 13 }}>Browse stores</Link>
-          <Link href="/admin" className="btn btn-primary" style={{ minHeight: 36, fontSize: 13 }}>Admin panel</Link>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          <Link href="/shop" style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", letterSpacing: ".02em", transition: "color 0.2s" }} className="hover:text-[var(--ink)]">
+             Browse stores
+          </Link>
+          <Link href="/admin" style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", letterSpacing: ".02em", transition: "color 0.2s" }} className="hover:text-[var(--ink)]">
+            Store operations
+          </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section style={{ padding: "80px 32px 60px", maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#F0FAF5", border: "1px solid #73AB9540", borderRadius: 20, padding: "6px 14px", marginBottom: 28, fontSize: 13, fontWeight: 700, color: "#2C645B" }}>
-          <ShieldCheck size={13} />
-          Powered by NVIDIA AI Vision · Tesseract OCR · Open Food Facts
-        </div>
-        <h1 style={{ fontSize: "clamp(36px, 6vw, 68px)", fontWeight: 900, letterSpacing: "-.05em", lineHeight: 1.05, margin: "0 0 20px", color: "#092922" }}>
-          Scan a label.<br />
-          <span style={{ color: "#2C645B" }}>Your inventory updates itself.</span>
-        </h1>
-        <p style={{ fontSize: 18, color: "#65777a", maxWidth: 560, margin: "0 auto 36px", lineHeight: 1.6 }}>
-          ScanMart AI turns any product photo or barcode into a live inventory record and public storefront — in under 10 seconds.
-        </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/admin" className="btn btn-primary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
-            <ScanLine size={17} /> Start scanning free <ArrowRight size={15} />
-          </Link>
-          <Link href="/shop" className="btn btn-secondary" style={{ minHeight: 50, fontSize: 15, padding: "0 28px" }}>
-            <Store size={17} /> See live storefronts
-          </Link>
-        </div>
-      </section>
+      {/* ─── Hero & Mockup (Asymmetric Two-Column) ─── */}
+      <section style={{ paddingTop: 160, paddingBottom: 120, paddingLeft: "max(40px, calc((100vw - 1200px) / 2))", paddingRight: 0, display: "flex", alignItems: "center", gap: 60, minHeight: "90vh" }}>
+        
+        {/* Left: Copy */}
+        <div style={{ flex: "0 0 500px", zIndex: 10 }}>
+          <div style={{ display: "inline-block", marginBottom: 40 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".15em", color: "var(--brand)", textTransform: "uppercase", borderBottom: "1px solid var(--brand)", paddingBottom: 6 }}>
+              Multi-Brand Retail
+            </div>
+          </div>
 
-      {/* Business previews */}
-      <section style={{ padding: "0 32px 60px", maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          {businesses.map((b) => (
-            <div key={b.type} style={{ border: "1px solid #e1e9e9", borderRadius: 10, padding: 20, background: "white" }}>
-              <div style={{ fontSize: 28, marginBottom: 10 }}>{b.icon}</div>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "#2C645B", textTransform: "uppercase", marginBottom: 4 }}>{b.type}</div>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{b.name}</div>
-              <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
-                <span style={{ fontSize: 12, color: "#65777a" }}>{b.items}</span>
-                <span style={{ fontSize: 12, color: "#65777a" }}>{b.orders}</span>
+          <h1 style={{ fontSize: "clamp(48px, 6vw, 84px)", fontWeight: 800, letterSpacing: "-.06em", lineHeight: 0.95, margin: "0 0 32px", color: "var(--ink)" }}>
+            Everyday<br/>essentials.<br/>
+            <span style={{ color: "var(--brand)" }}>Extraordinary<br/>experiences.</span>
+          </h1>
+
+          <p style={{ fontSize: 17, color: "var(--muted)", margin: "0 0 48px", lineHeight: 1.7, maxWidth: 420, fontWeight: 400 }}>
+            From neighborhood groceries and artisan coffee to premium salon services, ScanMart Retail Group operates a diverse portfolio of community-focused retail brands powered by next-generation technology.
+          </p>
+
+          <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+            <Link href="/shop" className="btn btn-primary" style={{ minHeight: 56, fontSize: 14, padding: "0 32px", borderRadius: 0, fontWeight: 700, letterSpacing: ".02em" }}>
+              Shop now
+            </Link>
+            <Link href="/admin" style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(44, 100, 91, 0.4)", paddingBottom: 4, transition: "border-color 0.2s" }} className="hover:border-[var(--brand)]">
+              Store operations login <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+
+        {/* Right: Mockup Bleeding Off Edge */}
+        <div className="animate-fade-in delay-200" style={{ flex: 1, position: "relative", height: 600 }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: -100, bottom: 0, background: "white", border: "1px solid rgba(44, 100, 91, 0.2)", borderRight: "none", boxShadow: "-20px 40px 80px rgba(44, 100, 91, 0.08)", display: "flex", flexDirection: "column" }}>
+            
+            {/* Header / Chrome */}
+            <div style={{ height: 50, borderBottom: "1px solid rgba(44, 100, 91, 0.15)", display: "flex", alignItems: "center", padding: "0 24px", gap: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".2em", color: "var(--brand)" }}>OS.01</div>
+              <div style={{ flex: 1, height: 1, background: "rgba(44, 100, 91, 0.15)" }} />
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--brand)" }}>LIVE INVENTORY</div>
+            </div>
+
+            <div style={{ flex: 1, display: "flex", padding: 32, gap: 40 }}>
+              {/* Sidebar lines */}
+              <div style={{ width: 140, display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ height: 2, width: 24, background: "var(--brand)" }} />
+                <div style={{ height: 1, width: "100%", background: "rgba(44, 100, 91, 0.15)" }} />
+                <div style={{ height: 1, width: "80%", background: "rgba(44, 100, 91, 0.15)" }} />
+                <div style={{ height: 1, width: "60%", background: "rgba(44, 100, 91, 0.15)" }} />
+              </div>
+
+              {/* Main content */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 32 }}>
+                
+                {/* Typographic Metrics */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, borderBottom: "1px solid rgba(44, 100, 91, 0.15)", paddingBottom: 32 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 12 }}>Products</div>
+                    <div style={{ fontSize: 36, fontWeight: 300, color: "var(--ink)", letterSpacing: "-.04em", lineHeight: 1 }}>1,204</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 12 }}>Orders Today</div>
+                    <div style={{ fontSize: 36, fontWeight: 300, color: "var(--brand)", letterSpacing: "-.04em", lineHeight: 1 }}>86</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 12 }}>Revenue</div>
+                    <div style={{ fontSize: 36, fontWeight: 300, color: "var(--ink)", letterSpacing: "-.04em", lineHeight: 1 }}>€42k</div>
+                  </div>
+                </div>
+
+                {/* Clean list */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {["Lavender Shampoo", "Cold Brew 250ml", "Organic Honey"].map((name, i) => (
+                    <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(44, 100, 91, 0.1)", paddingBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", width: 24 }}>0{i+1}</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{name}</div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: i === 1 ? "var(--amber)" : "var(--brand)", textTransform: "uppercase" }}>
+                        {i === 1 ? "Low Stock" : "In Stock"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
               </div>
             </div>
-          ))}
+          </div>
         </div>
-        <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "#A4B4CC" }}>
-          Built for salons, cafés, grocery stores — any small business with a product shelf.
-        </p>
       </section>
 
-      {/* How it works */}
-      <section style={{ padding: "60px 32px", background: "#F6F6F6", borderTop: "1px solid #e1e9e9" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div className="eyebrow" style={{ marginBottom: 10 }}>How it works</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-.04em", margin: 0 }}>From shelf to storefront in 4 steps</h2>
+      {/* ─── Our Brands ─── */}
+      <section style={{ padding: "120px 40px", background: "white", borderTop: "1px solid rgba(44, 100, 91, 0.2)" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
+            <h2 style={{ fontSize: "clamp(32px, 4vw, 48px)", fontWeight: 800, letterSpacing: "-.04em", margin: 0, color: "var(--ink)" }}>
+              Brands you love, in your neighborhood.
+            </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
-            {steps.map(({ icon: Icon, step, title, body }) => (
-              <div key={step} style={{ background: "white", border: "1px solid #e1e9e9", borderRadius: 10, padding: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 6, background: "#F0FAF5", display: "grid", placeItems: "center", color: "#2C645B" }}>
-                    <Icon size={16} />
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#A4B4CC", letterSpacing: ".1em" }}>{step}</span>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+            
+            {/* FreshMart (Full Width Horizontal) */}
+            <div style={{ gridColumn: "1 / -1", background: "var(--brand-soft)", padding: "48px 40px", display: "flex", alignItems: "center", gap: 32, flexWrap: "wrap" }}>
+              <div style={{ width: 80, height: 80, background: "white", borderRadius: 16, display: "grid", placeItems: "center", flexShrink: 0, border: "1px solid rgba(44, 100, 91, 0.1)", boxShadow: "0 10px 30px rgba(4,26,21,0.05)" }}>
+                <ShoppingBag size={36} color="var(--brand)" />
+              </div>
+              <div style={{ flex: "1 1 300px" }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".15em", color: "var(--brand)", textTransform: "uppercase", marginBottom: 8 }}>Neighborhood Grocery</div>
+                <h3 style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.03em", margin: "0 0 12px" }}>FreshMart</h3>
+                <p style={{ fontSize: 16, color: "var(--muted)", lineHeight: 1.6, margin: 0, maxWidth: 600 }}>
+                  Your daily destination for fresh produce, pantry staples, and household essentials. Always stocked, always local.
+                </p>
+              </div>
+            </div>
+
+            {/* Corner Café (White Card) */}
+            <div style={{ background: "white", border: "1px solid rgba(44, 100, 91, 0.2)", padding: 40, display: "flex", flexDirection: "column" }}>
+              <div style={{ width: 48, height: 48, background: "rgba(245, 158, 11, 0.1)", borderRadius: 12, display: "grid", placeItems: "center", marginBottom: 24 }}>
+                <Coffee size={24} color="var(--amber)" />
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".15em", color: "var(--amber)", textTransform: "uppercase", marginBottom: 8 }}>Artisan Coffee & Bakery</div>
+              <h3 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.03em", margin: "0 0 16px" }}>Corner Café</h3>
+              <p style={{ fontSize: 15, color: "var(--muted)", lineHeight: 1.6, margin: 0 }}>
+                Expertly crafted beverages and freshly baked pastries in a warm, welcoming environment for the community.
+              </p>
+            </div>
+
+            {/* Urban Glow (Dark Card) */}
+            <div style={{ background: "var(--ink)", padding: 40, display: "flex", flexDirection: "column" }}>
+              <div style={{ width: 48, height: 48, background: "rgba(115, 171, 149, 0.2)", borderRadius: 12, display: "grid", placeItems: "center", marginBottom: 24 }}>
+                <Scissors size={24} color="var(--sage)" />
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".15em", color: "var(--sage)", textTransform: "uppercase", marginBottom: 8 }}>Premium Salon & Spa</div>
+              <h3 style={{ fontSize: 26, fontWeight: 800, color: "white", letterSpacing: "-.03em", margin: "0 0 16px" }}>Urban Glow</h3>
+              <p style={{ fontSize: 15, color: "var(--sage)", lineHeight: 1.6, margin: 0 }}>
+                Elevated personal care and professional styling services using high-end, carefully curated beauty products.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ─── The ScanMart Advantage (Editorial list) ─── */}
+      <section style={{ padding: "120px 40px", background: "var(--canvas)", borderTop: "1px solid rgba(44, 100, 91, 0.2)" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          
+          <div style={{ marginBottom: 100 }}>
+             <h2 style={{ fontSize: "clamp(32px, 4vw, 56px)", fontWeight: 800, letterSpacing: "-.05em", margin: "0 0 24px", color: "var(--ink)", lineHeight: 1.1 }}>
+              How we deliver quality,<br/>every day.
+            </h2>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 80 }}>
+            {[
+              { num: "01", title: "Smart Intake", body: "Our store partners use intelligent vision systems to instantly digitize new inventory, keeping our shelves perfectly stocked." },
+              { num: "02", title: "Quality Control", body: "Every product detail is verified and managed through a unified operations platform, ensuring accurate pricing and descriptions." },
+              { num: "03", title: "Unified Commerce", body: "Whether you shop in-store or through our digital storefronts, our real-time inventory means you always get exactly what you need." },
+            ].map((step, i) => (
+              <div key={step.num} style={{ display: "flex", gap: "10%", alignItems: "flex-start", borderTop: "1px solid rgba(44, 100, 91, 0.2)", paddingTop: 40 }}>
+                {/* Large Ghost Number */}
+                <div style={{ fontSize: "clamp(80px, 10vw, 140px)", fontWeight: 300, color: "rgba(44, 100, 91, 0.15)", lineHeight: 0.8, letterSpacing: "-.06em", flexShrink: 0 }}>
+                  {step.num}
                 </div>
-                <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 700 }}>{title}</h3>
-                <p style={{ margin: 0, fontSize: 13, color: "#65777a", lineHeight: 1.6 }}>{body}</p>
+                {/* Content */}
+                <div style={{ paddingTop: 16, maxWidth: 400 }}>
+                  <h3 style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.03em", margin: "0 0 20px" }}>{step.title}</h3>
+                  <p style={{ fontSize: 16, color: "var(--muted)", lineHeight: 1.7, margin: 0 }}>{step.body}</p>
+                </div>
               </div>
             ))}
           </div>
+
         </div>
       </section>
 
-      {/* Features */}
-      <section style={{ padding: "60px 32px", maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Features</div>
-          <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-.04em", margin: 0 }}>AI is part of the workflow, not a chatbox</h2>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-          {features.map(({ icon: Icon, title, body }) => (
-            <div key={title} style={{ border: "1px solid #e1e9e9", borderRadius: 10, padding: 22, background: "white" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 6, background: "#F0FAF5", display: "grid", placeItems: "center", color: "#2C645B", marginBottom: 14 }}>
-                <Icon size={17} />
-              </div>
-              <h3 style={{ margin: "0 0 7px", fontSize: 14, fontWeight: 700 }}>{title}</h3>
-              <p style={{ margin: 0, fontSize: 13, color: "#65777a", lineHeight: 1.6 }}>{body}</p>
-            </div>
-          ))}
+      {/* ─── Bottom CTA ─── */}
+      <section style={{ padding: "120px 40px", background: "var(--ink)", borderTop: "1px solid var(--brand-dark)" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
+          <h2 style={{ color: "white", fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 800, letterSpacing: "-.05em", margin: "0 0 32px", lineHeight: 1.05 }}>
+            Ready to shop<br/>with us?
+          </h2>
+          <p style={{ color: "var(--muted)", fontSize: 18, margin: "0 auto 60px", fontWeight: 400, maxWidth: 400, lineHeight: 1.6 }}>
+            Explore our brands and discover what's in store today.
+          </p>
+          <div style={{ display: "flex", gap: 24, justifyContent: "center", alignItems: "center" }}>
+            <Link href="/shop" className="btn" style={{ background: "white", color: "var(--ink)", minHeight: 56, fontSize: 14, padding: "0 40px", borderRadius: 0, fontWeight: 700 }}>
+              Browse our stores
+            </Link>
+            <Link href="/admin" style={{ fontSize: 14, fontWeight: 600, color: "white", borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: 4, transition: "border-color 0.2s" }} className="hover:border-white">
+              Store operations login
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section style={{ padding: "60px 32px", background: "#092922", textAlign: "center" }}>
-        <h2 style={{ color: "white", fontSize: 36, fontWeight: 800, letterSpacing: "-.04em", margin: "0 0 14px" }}>
-          Ready to scan your first product?
-        </h2>
-        <p style={{ color: "#73AB95", fontSize: 16, margin: "0 0 32px" }}>
-          No sign-up needed. Full demo with real AI extraction.
-        </p>
-        <Link href="/admin" className="btn" style={{ background: "#EB774D", color: "white", minHeight: 52, fontSize: 16, padding: "0 36px", borderColor: "#EB774D" }}>
-          <ScanLine size={18} /> Try ScanMart AI free <ArrowRight size={15} />
-        </Link>
-      </section>
-
-      {/* Footer */}
-      <footer style={{ padding: "24px 32px", borderTop: "1px solid #e1e9e9", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#A4B4CC" }}>
-        <span style={{ fontWeight: 700, color: "#2C645B" }}>ScanMart AI</span>
-        <span>Built for small businesses · Powered by NVIDIA AI Vision</span>
+      {/* ─── Footer ─── */}
+      <footer style={{ padding: "40px", background: "var(--ink)", borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--muted)", fontWeight: 500, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ letterSpacing: ".05em", textTransform: "uppercase" }}>
+          ScanMart Retail Group
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <span>
+            Built by <strong style={{ color: "white", fontWeight: 700 }}>Trinayan Swarup</strong>
+          </span>
+          <a href="https://github.com/trinayanswarup" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted)", transition: "color 0.2s" }} className="hover:text-white">
+            <Github size={14} /> github.com/trinayanswarup
+          </a>
+        </div>
       </footer>
     </div>
   );

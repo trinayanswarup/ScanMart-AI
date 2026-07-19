@@ -434,7 +434,7 @@ export default function AdminScanPage() {
           <label className="label">Describe the product</label>
           <textarea
             className="textarea"
-            placeholder="Type product name, brand, category, price… e.g. 'Dove Intense Repair Shampoo 650ml ₹349'"
+            placeholder="Type product name, brand, category, price… e.g. 'Dove Intense Repair Shampoo 650ml €349'"
             value={text}
             onChange={(e) => setText(e.target.value)}
             style={{ minHeight: 120 }}
@@ -495,7 +495,7 @@ export default function AdminScanPage() {
               <textarea className="textarea" value={result.description} onChange={(e) => update("description", e.target.value)} style={{ minHeight: 80 }} />
             </div>
             <div>
-              <label className="label">Price (₹)</label>
+              <label className="label">Price (€)</label>
               <input className="input" type="number" min="0" value={result.suggestedPrice ?? ""} onChange={(e) => update("suggestedPrice", parseFloat(e.target.value))} placeholder="Enter price" />
             </div>
             <div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Play, Zap } from "lucide-react";
+import { ArrowRight, Activity } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useApp } from "@/components/app-provider";
 import { StatusBadge } from "@/components/status-badge";
@@ -9,14 +9,72 @@ import { StatusBadge } from "@/components/status-badge";
 export default function AdminAutomationsPage() {
   const { storeId } = useParams<{ storeId: string }>();
   const { state } = useApp();
+  
   const workflows = state.workflows.filter((w) => w.businessId === storeId);
   const wfIds = new Set(workflows.map((w) => w.id));
   const executions = state.executions.filter((e) => wfIds.has(e.workflowId));
-  const success = executions.filter((item) => item.status === "success").length;
-  const waiting = executions.filter((item) => item.status === "waiting_for_human").length;
-  return <div className="page-wrap"><div className="page-header"><div><div className="eyebrow">Agentic operations</div><h1>Automations</h1><p>See how events move through your business, step by step.</p></div></div>
-    <div className="grid-3" style={{ marginBottom: 20 }}><div className="card metric"><div className="metric-label">Active workflows</div><div className="metric-value">{workflows.filter((item) => item.isActive).length}</div><small className="muted">Watching business events</small></div><div className="card metric"><div className="metric-label">Successful runs</div><div className="metric-value">{success}</div><small className="muted">Completed without errors</small></div><div className="card metric"><div className="metric-label">Waiting for you</div><div className="metric-value">{waiting}</div><small className="muted">Human approval checkpoints</small></div></div>
-    <section className="grid-3">{workflows.map((workflow) => { const runs = executions.filter((item) => item.workflowId === workflow.id); const latest = runs[0]; return <Link href={`/admin/${storeId}/automations/${workflow.id}`} className="card" style={{ padding: 22, display: "flex", flexDirection: "column", minHeight: 275 }} key={workflow.id}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}><div className="empty-icon" style={{ margin: 0, width: 42, height: 42 }}><Zap size={19} /></div><span className="badge badge-green">Active</span></div><h2 style={{ fontSize: 17, letterSpacing: "-.025em", margin: "19px 0 8px" }}>{workflow.name}</h2><p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: 0 }}>{workflow.description}</p><div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}><span className="badge badge-gray">{workflow.triggerType.replaceAll("_", " ")}</span><span className="muted" style={{ fontSize: 10 }}>{workflow.nodeNames.length} nodes</span></div><div style={{ marginTop: "auto", paddingTop: 18, borderTop: "1px solid #e8ece9", display: "flex", justifyContent: "space-between", alignItems: "center" }}><span className="muted" style={{ fontSize: 11 }}>{runs.length} execution{runs.length === 1 ? "" : "s"}{latest && <> · <StatusBadge status={latest.status} /></>}</span><ArrowRight size={16} color="#2C645B" /></div></Link>})}</section>
-    <section className="card" style={{ marginTop: 20 }}><div style={{ padding: 20, borderBottom: "1px solid #e4e9e5" }}><h2 className="section-title">Recent executions</h2><p className="muted" style={{ fontSize: 12, margin: "5px 0 0" }}>An audit trail of automated business activity.</p></div>{executions.length ? <div className="table-wrap"><table className="table"><thead><tr><th>Workflow</th><th>Trigger</th><th>Status</th><th>Steps</th><th>Started</th><th /></tr></thead><tbody>{executions.map((execution) => <tr key={execution.id}><td><strong>{state.workflows.find((item) => item.id === execution.workflowId)?.name}</strong></td><td><span className="badge badge-gray">{execution.trigger.replaceAll("_", " ")}</span></td><td><StatusBadge status={execution.status} /></td><td>{execution.nodes.length}</td><td className="muted">{new Date(execution.startedAt).toLocaleString()}</td><td><Link className="btn btn-ghost" href={`/admin/${storeId}/automations/${execution.workflowId}`}><ArrowRight size={15} /></Link></td></tr>)}</tbody></table></div> : <div className="empty"><Play /><p>Run a scan or accept an order to create a trace.</p></div>}</section>
-  </div>;
+  
+  return (
+    <div className="page-wrap animate-fade-in" style={{ padding: "40px 32px 100px" }}>
+      <div className="page-header" style={{ marginBottom: 40 }}>
+        <div>
+          <h1 style={{ color: "var(--ink)", fontWeight: 800 }}>Store Activity</h1>
+          <p style={{ color: "var(--muted)", fontSize: 16 }}>An audit trail of recent events and actions.</p>
+        </div>
+      </div>
+      
+      <section className="card shadow-soft" style={{ overflow: "hidden" }}>
+        {executions.length ? (
+          <div className="table-wrap">
+            <table className="table" style={{ width: "100%", minWidth: 600 }}>
+              <thead style={{ background: "var(--surface)" }}>
+                <tr>
+                  <th style={{ padding: "16px 24px" }}>Activity</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {executions.map((execution) => {
+                  const wf = state.workflows.find((item) => item.id === execution.workflowId);
+                  return (
+                    <tr key={execution.id}>
+                      <td style={{ padding: "16px 24px" }}>
+                        <strong style={{ color: "var(--ink)", display: "block", marginBottom: 4 }}>
+                          {wf?.name || "Unknown event"}
+                        </strong>
+                        <span style={{ fontSize: 13, color: "var(--muted)" }}>
+                          Via {execution.trigger.replaceAll("_", " ").toLowerCase()}
+                        </span>
+                      </td>
+                      <td>
+                        <StatusBadge status={execution.status} />
+                      </td>
+                      <td style={{ fontSize: 13, color: "var(--muted)" }}>
+                        {new Date(execution.startedAt).toLocaleString()}
+                      </td>
+                      <td style={{ paddingRight: 24, textAlign: "right" }}>
+                        <Link className="btn btn-ghost" href={`/admin/${storeId}/automations/${execution.workflowId}`}>
+                          View details <ArrowRight size={14} style={{ marginLeft: 4 }} />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="empty" style={{ padding: "80px 20px" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--brand-soft)", color: "var(--brand)", display: "grid", placeItems: "center", margin: "0 auto 20px" }}>
+              <Activity size={32} />
+            </div>
+            <h3 style={{ fontSize: 20, color: "var(--ink)", fontWeight: 700, margin: "0 0 8px" }}>No recent activity</h3>
+            <p className="muted" style={{ fontSize: 15 }}>Run a scan or accept an order to see activity here.</p>
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }

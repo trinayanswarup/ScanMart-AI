@@ -1,47 +1,221 @@
-"use client";
+﻿﻿"use client";
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowRight, Box, CircleAlert, IndianRupee, PackagePlus, ScanLine, ShoppingBag, Store, Zap } from "lucide-react";
+import { ArrowUpRight, Box, CheckCircle2, ChevronRight, CircleAlert, Clock, Euro, MoreVertical, ScanLine, ShoppingBag, TrendingUp, Users, Activity } from "lucide-react";
 import { useApp } from "@/components/app-provider";
-import { StatusBadge } from "@/components/status-badge";
 
 export default function AdminDashboardPage() {
   const { storeId } = useParams<{ storeId: string }>();
-  const { state, getStore, getStoreInventory, getStoreListings, getStoreOrders } = useApp();
+  const { state, getStore, getStoreInventory, getStoreOrders } = useApp();
   const store = getStore(storeId);
 
   const inv = getStoreInventory(storeId);
   const active = inv.filter((item) => item.status === "active");
   const low = active.filter((item) => item.quantity <= item.lowStockThreshold);
-  const published = getStoreListings(storeId).filter((item) => item.isPublished).length;
   const orders = getStoreOrders(storeId);
   const pending = orders.filter((item) => item.status === "new").length;
+  const revenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
 
   const storeWorkflowIds = new Set(state.workflows.filter((w) => w.businessId === storeId).map((w) => w.id));
   const latest = state.executions.find((e) => storeWorkflowIds.has(e.workflowId));
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const firstName = store?.name.split(" ")[0] ?? "there";
+  return (
+    <div className="animate-fade-in" style={{ padding: "32px", display: "flex", flexDirection: "column", gap: 24 }}>
+      
+      {/* â”€â”€â”€ TOP METRICS (3 Columns) â”€â”€â”€ */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+        
+        <div className="card shadow-soft" style={{ padding: 24, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)", display: "grid", placeItems: "center" }}>
+              <TrendingUp size={24} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>Total Revenue</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.03em" }}>€{revenue.toLocaleString()}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--brand)", display: "flex", alignItems: "center", gap: 4 }}>
+            <ArrowUpRight size={14} /> 12% increase from last month
+          </div>
+        </div>
 
-  return <div className="page-wrap">
-    <div className="page-header"><div><div className="eyebrow">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</div><h1>{greeting}, {firstName}.</h1><p>Here&apos;s what is happening across your business today.</p></div><div style={{ display: "flex", gap: 10 }}><Link href={`/shop/${store?.slug ?? ""}`} className="btn btn-secondary"><Store size={16} />View store</Link><Link href={`/admin/${storeId}/scan`} className="btn btn-primary"><ScanLine size={16} />Scan product</Link></div></div>
-    <div className="grid-4">
-      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Inventory items</span><Box size={18} color="#2C645B" /></div><div className="metric-value">{active.length}</div><small className="muted">{published} published online</small></div>
-      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Low stock</span><CircleAlert size={18} color="#EB774D" /></div><div className="metric-value">{low.length}</div><small style={{ color: low.length ? "#9D552C" : "#657169" }}>{low.length ? "Needs your attention" : "Stock looks healthy"}</small></div>
-      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Open orders</span><ShoppingBag size={18} color="#A4B4CC" /></div><div className="metric-value">{pending}</div><small className="muted">{orders.length} total orders</small></div>
-      <div className="card metric"><div style={{ display: "flex", justifyContent: "space-between" }}><span className="metric-label">Order value</span><IndianRupee size={18} color="#2C645B" /></div><div className="metric-value">₹{orders.reduce((sum, order) => sum + order.totalAmount, 0).toLocaleString()}</div><small className="muted">Store revenue</small></div>
+        <div className="card shadow-soft" style={{ padding: 24, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(14, 165, 233, 0.1)", color: "#0EA5E9", display: "grid", placeItems: "center" }}>
+              <Box size={24} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>Total Inventory</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.03em" }}>{active.length}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: low.length ? "#D97706" : "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
+            {low.length ? <><CircleAlert size={14} /> {low.length} items low on stock</> : "All stock levels healthy"}
+          </div>
+        </div>
+
+        <div className="card shadow-soft" style={{ padding: 24, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(245, 158, 11, 0.1)", color: "var(--amber)", display: "grid", placeItems: "center" }}>
+              <ShoppingBag size={24} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>Open Orders</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.03em" }}>{pending}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
+            {orders.length} total lifetime orders
+          </div>
+        </div>
+
+      </div>
+
+      {/* â”€â”€â”€ MIDDLE SECTION â”€â”€â”€ */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 24 }}>
+        
+        {/* Recent Activity Widget */}
+        <div className="card shadow-soft" style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--line)" }}>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Recent Activity</h2>
+              <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>Needs your attention</span>
+            </div>
+            <div className="animate-pulse-ring" style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--mint)", marginTop: 6 }} />
+          </div>
+          
+          <div style={{ padding: 24, flex: 1, display: "flex", flexDirection: "column" }}>
+            {latest ? <>
+              {latest.status === "waiting_for_human" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", justifyContent: "center" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "#FEF3C7", color: "var(--amber)", display: "grid", placeItems: "center", marginBottom: 8 }}>
+                    <ScanLine size={24} />
+                  </div>
+                  <h3 style={{ fontSize: 18, margin: "0", color: "var(--ink)", fontWeight: 800 }}>New product scanned</h3>
+                  <p style={{ color: "var(--muted)", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+                    AI has drafted a new storefront listing. It needs your approval before it goes live.
+                  </p>
+                  <div style={{ marginTop: "auto", paddingTop: 24 }}>
+                    <Link href={`/admin/${storeId}/automations/${latest.workflowId}`} className="btn btn-primary shadow-glow" style={{ width: "100%", justifyContent: "center" }}>
+                      <CheckCircle2 size={16} /> Review & Approve
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)", display: "grid", placeItems: "center", marginBottom: 8 }}>
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <h3 style={{ fontSize: 16, margin: "0", color: "var(--ink)", fontWeight: 700 }}>You're all caught up!</h3>
+                  <p style={{ color: "var(--muted)", fontSize: 13, margin: 0 }}>
+                    Last activity: {state.workflows.find((wf) => wf.id === latest.workflowId)?.name} completed successfully.
+                  </p>
+                  <div style={{ marginTop: "auto", paddingTop: 24, width: "100%" }}>
+                    <Link href={`/admin/${storeId}/automations`} className="btn btn-secondary shadow-soft" style={{ width: "100%", justifyContent: "center" }}>
+                      View all activity
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </> : <div className="empty" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}><Activity size={40} color="var(--brand)" style={{ opacity: 0.2, margin: "0 auto 16px" }} /><p style={{ fontSize: 16, color: "var(--ink)", fontWeight: 600 }}>No recent activity.</p></div>}
+          </div>
+        </div>
+
+        {/* Trending Products Widget */}
+        <div className="card shadow-soft" style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Trending Products</h2>
+              <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>{active.length} total active items</span>
+            </div>
+            <button className="btn-icon" style={{ background: "transparent", border: "none", color: "var(--muted)" }}><MoreVertical size={16} /></button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {active.slice(0, 4).map((item) => (
+              <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", borderBottom: "1px solid var(--line)" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--canvas)", border: "1px solid var(--line)", display: "grid", placeItems: "center" }}>
+                  <Box size={20} color="var(--muted)" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>{item.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                    <span style={{ color: "var(--brand)", fontWeight: 700 }}>{item.quantity}</span> in stock · {item.category}
+                  </div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>€{item.price}</div>
+              </div>
+            ))}
+            {!active.length && <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No active products found.</div>}
+            {active.length > 0 && (
+              <Link href={`/admin/${storeId}/inventory`} style={{ display: "block", textAlign: "center", padding: 12, fontSize: 13, fontWeight: 700, color: "var(--brand)", textDecoration: "none" }}>
+                See all products
+              </Link>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* â”€â”€â”€ BOTTOM SECTION â”€â”€â”€ */}
+      <div className="card shadow-soft" style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Recent Orders</h2>
+          <Link href={`/admin/${storeId}/orders`} className="btn btn-secondary" style={{ height: 32, fontSize: 13, padding: "0 12px" }}>
+            View all orders
+          </Link>
+        </div>
+        
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--line)", background: "var(--canvas)" }}>
+                <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase" }}>Order ID</th>
+                <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase" }}>Customer / Items</th>
+                <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase" }}>Date</th>
+                <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase" }}>Status</th>
+                <th style={{ padding: "16px 24px", fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", textAlign: "right" }}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.slice(0, 5).map((order) => (
+                <tr key={order.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                  <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>#{order.id.slice(0, 6)}</td>
+                  <td style={{ padding: "16px 24px" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{order.items.length} items</div>
+                  </td>
+                  <td style={{ padding: "16px 24px", fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: "16px 24px" }}>
+                    {order.status === "new" ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20, background: "rgba(245, 158, 11, 0.1)", color: "#D97706", fontSize: 12, fontWeight: 700 }}>
+                        <Clock size={12} /> Pending
+                      </span>
+                    ) : (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20, background: "rgba(16, 185, 129, 0.1)", color: "#059669", fontSize: 12, fontWeight: 700 }}>
+                        <CheckCircle2 size={12} /> Complete
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ padding: "16px 24px", fontSize: 14, fontWeight: 700, color: "var(--ink)", textAlign: "right" }}>
+                    €{order.totalAmount}
+                  </td>
+                </tr>
+              ))}
+              {!orders.length && (
+                <tr>
+                  <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 14, fontWeight: 500 }}>
+                    No orders have been placed yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
-    <div className="grid-2" style={{ marginTop: 20, gridTemplateColumns: "1.3fr .7fr" }}>
-      <section className="card">
-        <div style={{ padding: "20px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><h2 className="section-title">Inventory pulse</h2><p className="muted" style={{ fontSize: 12, margin: "5px 0" }}>Items requiring attention</p></div><Link href={`/admin/${storeId}/inventory`} className="btn btn-ghost">View all <ArrowRight size={15} /></Link></div>
-        {low.length ? <div className="table-wrap"><table className="table" style={{ minWidth: 500 }}><thead><tr><th>Product</th><th>Category</th><th>On hand</th><th>Status</th></tr></thead><tbody>{low.slice(0, 4).map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{item.category}</td><td>{item.quantity} {item.unit}</td><td><span className="badge badge-amber">Low stock</span></td></tr>)}</tbody></table></div> : <div className="empty"><Box size={28} /><p>Everything is comfortably stocked.</p></div>}
-      </section>
-      <section className="card" style={{ padding: 20 }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><h2 className="section-title">Latest automation</h2><p className="muted" style={{ fontSize: 12, margin: "5px 0 0" }}>Live workflow activity</p></div><Zap size={18} color="#2C645B" /></div>
-        {latest ? <div style={{ marginTop: 24 }}><StatusBadge status={latest.status} /><h3 style={{ fontSize: 15, margin: "13px 0 5px" }}>{state.workflows.find((wf) => wf.id === latest.workflowId)?.name}</h3><p className="muted" style={{ fontSize: 12 }}>{latest.nodes.length} steps recorded</p><div style={{ borderLeft: "1px solid #dce4de", margin: "22px 0 20px 8px", paddingLeft: 18, display: "grid", gap: 16 }}>{latest.nodes.map((node) => <div key={node.id} style={{ fontSize: 12, position: "relative" }}><i style={{ position: "absolute", left: -23, top: 3, width: 9, height: 9, borderRadius: "50%", background: node.status === "success" ? "#73AB95" : "#EB774D", border: "2px solid white", boxShadow: "0 0 0 1px #bdd1c4" }} />{node.nodeName}</div>)}</div><Link href={`/admin/${storeId}/automations/${latest.workflowId}`} className="btn btn-secondary" style={{ width: "100%" }}>Open execution trace</Link></div> : <div className="empty">No runs yet.</div>}
-      </section>
-    </div>
-    <section style={{ marginTop: 20 }}><h2 className="section-title" style={{ marginBottom: 14 }}>Quick actions</h2><div className="grid-3">{[{ href: `/admin/${storeId}/scan`, icon: ScanLine, title: "Scan a product", text: "Use an image, webcam, or label text." }, { href: `/admin/${storeId}/inventory/new`, icon: PackagePlus, title: "Add manually", text: "Create a precise inventory record." }, { href: `/admin/${storeId}/automations`, icon: Zap, title: "Review workflows", text: "See what your automations have done." }].map(({ href, icon: Icon, title, text }) => <Link href={href} className="card" style={{ padding: 19, display: "flex", gap: 14, alignItems: "center" }} key={title}><div style={{ width: 42, height: 42, borderRadius: 5, background: "#F6F6F6", color: "#2C645B", display: "grid", placeItems: "center" }}><Icon size={19} /></div><div><strong style={{ fontSize: 14 }}>{title}</strong><p className="muted" style={{ fontSize: 11, margin: "5px 0 0" }}>{text}</p></div></Link>)}</div></section>
-  </div>;
+  );
 }

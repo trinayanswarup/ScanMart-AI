@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     if (body.userText?.trim()) {
       textPrompt += `\n\nUser-provided hint: ${body.userText.trim()}`;
     }
+    textPrompt += "\n\nCRITICAL: Return ONLY the raw JSON object. Do not include any markdown formatting, headers, bold text, or explanatory text before or after the JSON.";
     textPrompt += "\n\nReturn JSON only:";
 
     contentParts.push({ type: "text", text: textPrompt });
@@ -69,6 +70,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No input provided" }, { status: 400 });
     }
 
+    // Add a 25-second timeout so the UI doesn't hang forever if NVIDIA API stalls
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
     const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -76,13 +81,16 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
+      signal: controller.signal,
       body: JSON.stringify({
-        model: "meta/llama-3.2-90b-vision-instruct",
+        model: "meta/llama-3.2-11b-vision-instruct",
         messages: [{ role: "user", content: contentParts }],
         max_tokens: 512,
         temperature: 0.2,
       }),
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errText = await response.text();
@@ -95,8 +103,23 @@ export async function POST(req: NextRequest) {
     };
 
     const raw = data.choices?.[0]?.message?.content ?? "";
-    const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-    const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+
+    // Strip markdown code fences and any leading/trailing prose
+    let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+    // Extract just the JSON object if there's surrounding text (e.g. "**Product Analysis**\n{...}")
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    }
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(cleaned) as Record<string, unknown>;
+    } catch (parseErr) {
+      console.error("[/api/extract] Failed to parse AI response:", raw);
+      throw parseErr;
+    }
 
     const validated = productAIExtractionSchema.parse({
       productName: (typeof parsed.productName === "string" && parsed.productName.trim()) || "Unknown Product",
@@ -112,8 +135,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(validated);
-  } catch (err) {
+  } catch (err: any) {
     console.error("[/api/extract]", err);
+    if (err.name === 'AbortError') {
+      return NextResponse.json({ error: "AI service is currently busy. Please try again or enter details manually." }, { status: 504 });
+    }
     return NextResponse.json({ error: "Extraction failed" }, { status: 500 });
   }
 }

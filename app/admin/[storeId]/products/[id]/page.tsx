@@ -1,33 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useState } from "react";
-import { ArrowLeft, Bot, Check, Clock3, Edit3, Package, Save, Send, Store, X } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Bot, CheckCircle2, Edit3, Save, Store } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 
 export default function AdminProductDetailPage() {
   const { storeId, id } = useParams<{ storeId: string; id: string }>();
+  const router = useRouter();
   const { state, saveListing, updateInventory } = useApp();
+  
   const item = state.inventory.find((entry) => entry.id === id);
   const itemStore = item ? state.stores.find((s) => s.id === item.businessId) : undefined;
   const listing = state.listings.find((entry) => entry.inventoryItemId === id);
   const correction = state.corrections.find((entry) => entry.inventoryItemId === id);
-  const [editingListing, setEditingListing] = useState(false);
+  
   const [listingForm, setListingForm] = useState({ title: "", description: "", price: "" });
   const [listingMessage, setListingMessage] = useState("");
+  const [isClient, setIsClient] = useState(false);
 
-  if (!item) return <div className="page-wrap"><div className="empty"><h2>Product not found</h2><Link href={`/admin/${storeId}/inventory`} className="btn btn-primary">Back to inventory</Link></div></div>;
+  useEffect(() => {
+    setIsClient(true);
+    if (item) {
+      setListingForm({
+        title: listing?.title ?? item.name,
+        description: listing?.description ?? item.description,
+        price: String(listing?.price || item.price || ""),
+      });
+    }
+  }, [item, listing]);
 
-  const openListingEditor = () => {
-    setListingForm({
-      title: listing?.title ?? item.name,
-      description: listing?.description ?? item.description,
-      price: String(listing?.price || item.price || ""),
-    });
-    setListingMessage("");
-    setEditingListing(true);
-  };
+  if (!item && isClient) return <div className="page-wrap"><div className="empty"><h2>Product not found</h2><Link href={`/admin/${storeId}/inventory`} className="btn btn-primary">Back to inventory</Link></div></div>;
+  if (!item) return null;
 
   const submitListing = () => {
     const result = saveListing(item.id, {
@@ -35,37 +40,131 @@ export default function AdminProductDetailPage() {
       description: listingForm.description,
       price: Number(listingForm.price),
     });
-    setListingMessage(result.message);
-    if (result.ok) setEditingListing(false);
+    
+    if (result.ok) {
+      router.push(`/admin/${storeId}/inventory`);
+    } else {
+      setListingMessage(result.message);
+      setTimeout(() => {
+        setListingMessage("");
+      }, 3000);
+    }
   };
 
-  return <div className="page-wrap">
-    <Link href={`/admin/${storeId}/inventory`} className="btn btn-ghost" style={{ paddingLeft: 0, marginBottom: 12 }}><ArrowLeft size={16} />Back to inventory</Link>
-    <div className="page-header">
-      <div><div style={{ display: "flex", alignItems: "center", gap: 10 }}><h1>{item.name}</h1><span className={`badge ${item.quantity <= item.lowStockThreshold ? "badge-amber" : "badge-green"}`}>{item.quantity <= item.lowStockThreshold ? "Low stock" : "In stock"}</span></div><p>{item.brand || "Unbranded"} · {item.category}</p></div>
-      <div style={{ display: "flex", gap: 9 }}>{listing?.isPublished && <Link href={`/shop/${itemStore?.slug ?? ""}`} className="btn btn-secondary"><Store size={16} />View store</Link>}<button className="btn btn-primary" onClick={openListingEditor}><Send size={16} />{listing?.isPublished ? "Update listing" : "Publish product"}</button></div>
+  return (
+    <div style={{ paddingBottom: 100, background: "var(--canvas)", minHeight: "100vh" }}>
+      <header className="glass" style={{ padding: "0 24px", height: 72, display: "flex", alignItems: "center", position: "sticky", top: 0, zIndex: 40, borderBottom: "1px solid var(--line)" }}>
+        <Link href={`/admin/${storeId}/inventory`} className="btn btn-ghost" style={{ paddingLeft: 0 }}>
+          <ArrowLeft size={16} /> Back
+        </Link>
+      </header>
+
+      <main className="animate-fade-in" style={{ maxWidth: 1100, margin: "40px auto", padding: "0 24px" }}>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+          <div>
+            <h1 style={{ fontSize: 32, fontWeight: 800, color: "var(--ink)", margin: "0 0 8px" }}>{item.name}</h1>
+            <p style={{ color: "var(--muted)", margin: 0 }}>{item.brand || "Unbranded"} · {item.category}</p>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            {listing?.isPublished && (
+              <Link href={`/shop/${itemStore?.slug ?? ""}`} className="btn btn-secondary shadow-soft">
+                <Store size={16} /> View in store
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div className="grid-2" style={{ gridTemplateColumns: "1.3fr .7fr", gap: 32 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+            {/* Main Product Edit Card */}
+            <section className="card shadow-soft" style={{ padding: 32 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", marginBottom: 24 }}>Storefront details</h2>
+              
+              <div style={{ display: "grid", gap: 24 }}>
+                <div style={{ position: "relative" }}>
+                  <label style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Product Title</label>
+                  <input className="input" style={{ paddingTop: 14, paddingBottom: 14 }} value={listingForm.title} onChange={(e) => setListingForm({ ...listingForm, title: e.target.value })} />
+                </div>
+                
+                <div style={{ position: "relative" }}>
+                  <label style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Price (€)</label>
+                  <input className="input" type="number" min="0" step="0.01" style={{ paddingTop: 14, paddingBottom: 14 }} value={listingForm.price} onChange={(e) => setListingForm({ ...listingForm, price: e.target.value })} />
+                </div>
+                
+                <div style={{ position: "relative" }}>
+                  <label style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Description</label>
+                  <textarea className="input" style={{ minHeight: 120, paddingTop: 14 }} value={listingForm.description} onChange={(e) => setListingForm({ ...listingForm, description: e.target.value })} />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Status Card */}
+            <section className="card shadow-soft" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 16 }}>Status</h3>
+              
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: listing?.isPublished ? "var(--brand)" : "var(--amber)" }} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{listing?.isPublished ? "Published online" : "Draft (Not visible)"}</span>
+              </div>
+
+              <div style={{ height: 1, background: "var(--line)", marginBottom: 20 }} />
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <span style={{ fontSize: 13, color: "var(--muted)", display: "block", marginBottom: 4 }}>Inventory stock</span>
+                  <strong style={{ fontSize: 15, color: "var(--ink)" }}>{item.quantity} {item.unit}</strong>
+                  {item.quantity <= item.lowStockThreshold && <span style={{ fontSize: 12, color: "var(--amber)", display: "block", marginTop: 4 }}>Low stock</span>}
+                </div>
+                <button className="btn btn-ghost" style={{ padding: "8px" }} onClick={() => { 
+                  const quantity = prompt("Update quantity", String(item.quantity)); 
+                  if (quantity !== null && Number(quantity) >= 0) updateInventory(item.id, { quantity: Number(quantity) }); 
+                }}>
+                  <Edit3 size={16} color="var(--muted)" />
+                </button>
+              </div>
+            </section>
+
+            {/* AI Source subtle badge */}
+            {item.source === "ai_scan" && (
+              <section className="card shadow-soft" style={{ padding: 20, background: "#F0FAF5", border: "1px solid #C6E6D6", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <Bot size={18} color="var(--brand)" style={{ marginTop: 2 }} />
+                <div>
+                  <strong style={{ fontSize: 13, color: "var(--brand)", display: "block", marginBottom: 4 }}>AI-Assisted Scan</strong>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
+                    Details were extracted from a scan with {Math.round(item.aiConfidence! * 100)}% confidence.
+                  </p>
+                </div>
+              </section>
+            )}
+            
+            {correction && (
+              <section className="card shadow-soft" style={{ padding: 20, background: "#FFFBEB", border: "1px solid var(--amber)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div>
+                  <strong style={{ fontSize: 13, color: "#92400E", display: "block", marginBottom: 4 }}>Human Corrected</strong>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
+                    AI output was modified before saving.
+                  </p>
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* Sticky Bottom Action Bar */}
+      <div className="glass" style={{ position: "fixed", bottom: 0, left: 240, right: 0, borderTop: "1px solid var(--line)", padding: "16px 40px", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16, zIndex: 40, background: "rgba(255, 255, 255, 0.9)" }}>
+        {listingMessage && (
+          <span className="animate-fade-in" style={{ color: listingMessage === "Storefront listing updated." ? "var(--brand)" : "var(--danger)", fontSize: 14, fontWeight: 600 }}>
+            {listingMessage}
+          </span>
+        )}
+        <button className="btn btn-primary shadow-glow" onClick={submitListing} style={{ minHeight: 44, padding: "0 24px", fontSize: 15 }}>
+          <Save size={16} /> Save & publish
+        </button>
+      </div>
     </div>
-
-    {listingMessage && <div className={listingMessage === "Storefront listing updated." ? "notice" : "error-text"} style={{ marginBottom: 18 }}>{listingMessage}</div>}
-
-    {editingListing && <section className="card listing-editor">
-      <div className="editor-header"><div><h2 className="section-title">{listing?.isPublished ? "Update storefront listing" : "Publish product"}</h2><p>These fields are what customers see in the public store.</p></div><button className="btn btn-ghost" onClick={() => setEditingListing(false)}><X size={16} />Close</button></div>
-      <div className="form-grid"><div><label className="label">Listing title *</label><input className="input" value={listingForm.title} onChange={(event) => setListingForm({ ...listingForm, title: event.target.value })} /></div><div><label className="label">Price (₹) *</label><input className="input" type="number" min="0" step="0.01" value={listingForm.price} onChange={(event) => setListingForm({ ...listingForm, price: event.target.value })} /></div></div>
-      <div style={{ marginTop: 17 }}><label className="label">Storefront description *</label><textarea className="textarea" value={listingForm.description} onChange={(event) => setListingForm({ ...listingForm, description: event.target.value })} /></div>
-      {listingMessage && listingMessage !== "Storefront listing updated." && <div className="error-text">{listingMessage}</div>}
-      <div className="editor-actions"><button className="btn btn-secondary" onClick={() => setEditingListing(false)}>Cancel</button><button className="btn btn-primary" onClick={submitListing}><Save size={16} />Save & publish</button></div>
-    </section>}
-
-    <div className="grid-2" style={{ gridTemplateColumns: "1.2fr .8fr" }}><section className="card" style={{ padding: 24 }}><div style={{ display: "flex", justifyContent: "space-between" }}><h2 className="section-title">Product information</h2><button className="btn btn-ghost" onClick={() => { const quantity = prompt("Update quantity", String(item.quantity)); if (quantity !== null && Number(quantity) >= 0) updateInventory(item.id, { quantity: Number(quantity) }); }}><Edit3 size={15} />Edit stock</button></div><div className="grid-2" style={{ marginTop: 22 }}>{[{ label: "Current stock", value: `${item.quantity} ${item.unit}` }, { label: "Price", value: item.price ? `₹${item.price}` : "Not set" }, { label: "Low-stock threshold", value: `${item.lowStockThreshold} ${item.unit}` }, { label: "Source", value: item.source.replace("_", " ") }].map((data) => <div className="subtle-card" style={{ padding: 16 }} key={data.label}><span className="muted" style={{ fontSize: 11 }}>{data.label}</span><strong style={{ display: "block", marginTop: 7, textTransform: data.label === "Source" ? "capitalize" : undefined }}>{data.value}</strong></div>)}</div><div style={{ marginTop: 24 }}><span className="label">Description</span><p className="muted" style={{ lineHeight: 1.7 }}>{item.description}</p></div></section>
-      <aside style={{ display: "grid", gap: 20 }}><section className="card" style={{ padding: 22 }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><div className="empty-icon" style={{ margin: 0, width: 38, height: 38 }}><Bot size={18} /></div><div><h2 className="section-title">AI extraction</h2><span className="muted" style={{ fontSize: 11 }}>{item.source === "ai_scan" ? "Generated from a product scan" : "Not AI-generated"}</span></div></div>{item.aiConfidence ? <><div style={{ display: "flex", justifyContent: "space-between", marginTop: 22, fontSize: 12 }}><span>Confidence</span><strong>{Math.round(item.aiConfidence * 100)}%</strong></div><div style={{ height: 7, background: "#edf1ee", borderRadius: 4, marginTop: 8 }}><i style={{ display: "block", height: "100%", width: `${item.aiConfidence * 100}%`, background: "#73AB95", borderRadius: 4 }} /></div></> : <p className="muted" style={{ fontSize: 12, marginTop: 18 }}>This item was added {item.source.replace("_", " ")}.</p>}</section>
-      <section className="card" style={{ padding: 22 }}><h2 className="section-title">Storefront status</h2><div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}><div className="empty-icon" style={{ margin: 0, width: 38, height: 38, background: listing?.isPublished ? "#F6F6F6" : "#f1f3f2" }}>{listing?.isPublished ? <Check size={18} /> : <Clock3 size={18} />}</div><div><strong style={{ fontSize: 13 }}>{listing?.isPublished ? "Published and visible" : listing ? "Draft awaiting approval" : "Inventory only"}</strong><p className="muted" style={{ fontSize: 11, margin: "4px 0 0" }}>{listing?.isPublished ? "Customers can order this product." : "Publish when the details are ready."}</p></div></div></section></aside></div>
-    {correction && <section className="card" style={{ marginTop: 20, padding: 24 }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><Package size={18} color="#2C645B" /><h2 className="section-title">Human correction history</h2></div><p className="muted" style={{ fontSize: 12 }}>Your review changed the AI output before this product was saved.</p><div className="grid-2" style={{ marginTop: 16 }}><pre className="subtle-card" style={{ padding: 16, overflow: "auto", fontSize: 11 }}>{JSON.stringify(correction.original, null, 2)}</pre><pre className="subtle-card" style={{ padding: 16, overflow: "auto", fontSize: 11 }}>{JSON.stringify(correction.corrected, null, 2)}</pre></div></section>}
-    <style jsx>{`
-      .listing-editor { padding: 24px; margin-bottom: 20px; border-color: #73AB95; }
-      .editor-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 22px; }
-      .editor-header p { margin: 6px 0 0; color: #65777a; font-size: 12px; }
-      .editor-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
-      @media (max-width: 650px) { .editor-header { flex-direction: column; } .editor-actions { display: grid; grid-template-columns: 1fr 1fr; } }
-    `}</style>
-  </div>;
+  );
 }

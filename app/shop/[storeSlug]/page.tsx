@@ -1,11 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Minus, Plus, Search, ShoppingBag, Sparkles, Store, X } from "lucide-react";
+import { Check, CheckCircle2, Minus, Plus, Search, ShoppingBag, Sparkles, Store, X } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Logo } from "@/components/logo";
 import { useApp } from "@/components/app-provider";
+
+const getStoreGradient = (type: string) => {
+  if (type === "salon") return "linear-gradient(135deg, #1E293B, #0F172A)";
+  if (type === "cafe") return "linear-gradient(135deg, #78350F, #451A03)";
+  if (type === "grocery") return "linear-gradient(135deg, #064E3B, #022C22)";
+  return "linear-gradient(135deg, #2C645B, #1E4942)";
+};
+
+const FallbackImage = ({ seed }: { seed: string }) => {
+  return (
+    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #E0F2E9, #F4F7F5)", display: "grid", placeItems: "center" }}>
+       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
+         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+         <line x1="12" y1="22.08" x2="12" y2="12"></line>
+       </svg>
+    </div>
+  );
+};
 
 export default function ShopStorefrontPage() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
@@ -13,9 +32,13 @@ export default function ShopStorefrontPage() {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [drawer, setDrawer] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => { setIsClient(true); }, []);
 
   const store = state.stores.find((s) => s.slug === storeSlug);
-  if (!store) return <div className="empty"><h2>Store not found</h2><Link href="/shop" className="btn btn-primary">Browse stores</Link></div>;
+  if (!store && isClient) return <div className="empty"><h2>Store not found</h2><Link href="/shop" className="btn btn-primary">Browse stores</Link></div>;
+  if (!store) return null; // Wait for hydration
 
   const storeListings = state.listings.filter((l) => l.businessId === store.id);
   const storeInv = state.inventory.filter((i) => i.businessId === store.id);
@@ -29,18 +52,139 @@ export default function ShopStorefrontPage() {
   const storeCart = state.cart.filter((c) => c.storeId === store.id);
   const total = storeCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  return <div style={{ minHeight: "100vh", background: "#fafbf9" }}>
-    <header className="store-header"><Logo /><nav><Link href="/shop">All stores</Link><Link href="/admin">Seller dashboard</Link><button className="cart-button" onClick={() => setDrawer(true)}><ShoppingBag size={18} />Cart {storeCart.length > 0 && <b>{storeCart.reduce((sum, item) => sum + item.quantity, 0)}</b>}</button></nav></header>
-    <section className="store-hero"><div><span className="store-kicker"><Store size={14} />Local pickup available</span><h1>{store.name}</h1><p>Browse our carefully selected products, available for local pickup.</p><div className="store-meta"><span><Check size={14} />Pay at pickup</span><span><Check size={14} />Local service</span></div></div><div className="store-mark">{store.name.split(" ").map((word) => word[0]).join("")}</div></section>
-    <main className="store-main"><div className="store-toolbar"><div className="categories">{categories.map((item) => <button className={category === item ? "category-active" : ""} onClick={() => setCategory(item)} key={item}>{item}</button>)}</div><div className="store-search"><Search size={16} /><input placeholder="Search products" value={search} onChange={(e) => setSearch(e.target.value)} /></div></div>
-      <div className="product-heading"><div><h2>Shop products</h2><p>{products.length} items available</p></div></div>
-      {products.length ? <div className="product-grid">{products.map((listing, index) => { const item = storeInv.find((entry) => entry.id === listing.inventoryItemId)!; return <article className="product-card" key={listing.id}><div className={`product-image tone-${index % 4}`}>{item.imageUrl?.startsWith("data:") ? <img src={item.imageUrl} alt={listing.title} /> : <div className="product-placeholder"><span>{listing.title.split(" ").slice(0, 2).map((word) => word[0]).join("")}</span></div>}<span className="stock-pill">{item.quantity} left</span></div><div className="product-body"><span className="product-category">{item.category}</span><h3>{listing.title}</h3><p>{listing.description}</p><div className="product-footer"><strong>₹{listing.price}</strong><button onClick={() => { addToCart(listing.id); setDrawer(true); }}><Plus size={16} />Add</button></div></div></article>})}</div> : <div className="empty"><div className="empty-icon"><Search /></div><h3>No matching products</h3><p className="muted">Try another category or search term.</p></div>}
+  return <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
+    <header className="glass" style={{ height: 72, maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 40 }}>
+      <Logo />
+      <nav style={{ display: "flex", gap: 24, alignItems: "center" }}>
+        <Link href="/shop" style={{ fontSize: 14, fontWeight: 600, color: "var(--muted)" }}>All stores</Link>
+        <button onClick={() => setDrawer(true)} className="btn btn-primary shadow-glow" style={{ position: "relative" }}>
+          <ShoppingBag size={16} /> Cart
+          {storeCart.length > 0 && (
+            <span style={{ position: "absolute", top: -6, right: -6, background: "var(--danger)", color: "white", width: 20, height: 20, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 800, border: "2px solid var(--surface)" }}>
+              {storeCart.reduce((sum, item) => sum + item.quantity, 0)}
+            </span>
+          )}
+        </button>
+      </nav>
+    </header>
+    
+    <section className="animate-fade-in" style={{ maxWidth: 1200, margin: "20px auto 0", background: getStoreGradient(store.businessType), color: "white", borderRadius: 16, padding: "60px 80px", display: "flex", alignItems: "center", justifyContent: "space-between", overflow: "hidden", position: "relative", boxShadow: "0 24px 50px rgba(4, 26, 21, 0.12)" }}>
+      <div style={{ position: "relative", zIndex: 2 }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.7)", display: "flex", gap: 8, alignItems: "center", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 12 }}>
+          <Store size={14} /> Local pickup available
+        </span>
+        <h1 style={{ fontSize: 52, letterSpacing: "-.04em", margin: "0 0 12px", fontWeight: 800 }}>{store.name}</h1>
+        <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 18, maxWidth: 500 }}>Browse our carefully selected products, available for local pickup today.</p>
+        <div style={{ display: "flex", gap: 24, marginTop: 32, color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 600 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}><CheckCircle2 size={16} color="#7CD4AC" /> Pay at pickup</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}><CheckCircle2 size={16} color="#7CD4AC" /> Local service</span>
+        </div>
+      </div>
+      <div style={{ width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", display: "grid", placeItems: "center", fontSize: 64, fontWeight: 900, boxShadow: "0 0 0 40px rgba(255,255,255,0.02)", position: "absolute", right: 60 }}>
+        {store.name.charAt(0)}
+      </div>
+    </section>
+    
+    <main style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 80px" }}>
+      <div className="animate-slide-up delay-100" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, marginBottom: 40, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {categories.map((item) => (
+             <button key={item} onClick={() => setCategory(item)} style={{ background: category === item ? "var(--ink)" : "white", color: category === item ? "white" : "var(--muted)", border: category === item ? "1px solid var(--ink)" : "1px solid var(--line)", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, transition: ".2s" }}>
+               {item}
+             </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--line)", background: "white", borderRadius: 8, padding: "0 14px", width: "100%", maxWidth: 300, boxShadow: "0 2px 8px rgba(4, 26, 21, 0.02)" }}>
+          <Search size={16} color="var(--muted)" />
+          <input placeholder="Search products" value={search} onChange={(e) => setSearch(e.target.value)} style={{ border: 0, outline: 0, background: "transparent", height: 42, width: "100%", fontSize: 14 }} />
+        </div>
+      </div>
+      
+      <div className="animate-slide-up delay-200" style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 26, margin: 0, letterSpacing: "-.03em", color: "var(--ink)", fontWeight: 800 }}>Shop products</h2>
+        <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>{products.length} items available</p>
+      </div>
+      
+      {products.length ? <div className="grid-4 animate-slide-up delay-300">
+        {products.map((listing, index) => { 
+          const item = storeInv.find((entry) => entry.id === listing.inventoryItemId)!; 
+          return (
+            <article className="card shadow-soft" key={listing.id} style={{ display: "flex", flexDirection: "column", overflow: "hidden", transition: "all .2s cubic-bezier(0.16, 1, 0.3, 1)" }}
+                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 20px 40px rgba(4, 26, 21, 0.08)"; }}
+                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-soft)"; }}>
+              <div style={{ height: 240, position: "relative", background: "#F4F7F5" }}>
+                {item.imageUrl?.startsWith("data:") ? <img src={item.imageUrl} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <FallbackImage seed={listing.id} />}
+                {item.quantity < 5 && <span className="badge badge-amber" style={{ position: "absolute", top: 12, right: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>Only {item.quantity} left</span>}
+              </div>
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", flex: 1 }}>
+                <span style={{ color: "var(--brand)", fontSize: 10, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase" }}>{item.category}</span>
+                <h3 style={{ fontSize: 16, margin: "8px 0", color: "var(--ink)", fontWeight: 700, lineHeight: 1.4 }}>{listing.title}</h3>
+                <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.6, flex: 1, marginBottom: 20, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{listing.description}</p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <strong style={{ fontSize: 22, color: "var(--ink)", fontWeight: 800 }}>€{listing.price}</strong>
+                </div>
+                <button className="btn btn-primary shadow-glow" style={{ width: "100%", padding: "0" }} onClick={() => { addToCart(listing.id); setDrawer(true); }}>
+                  <Plus size={16} /> Add to cart
+                </button>
+              </div>
+            </article>
+          )})}
+      </div> : <div className="card shadow-soft empty animate-slide-up"><div className="empty-icon"><Search /></div><h3 style={{ fontSize: 20, color: "var(--ink)", fontWeight: 700 }}>No matching products</h3><p className="muted">Try another category or search term.</p></div>}
     </main>
-    <section className="store-promise"><Sparkles size={22} /><div><strong>Powered by ScanMart AI</strong><span>Product information is reviewed by the seller before publishing.</span></div></section>
-    {drawer && <><button className="drawer-overlay" onClick={() => setDrawer(false)} /><aside className="cart-drawer"><div className="drawer-head"><div><h2>Your cart</h2><span>{storeCart.reduce((sum, item) => sum + item.quantity, 0)} items</span></div><button onClick={() => setDrawer(false)}><X /></button></div><div className="drawer-items">{storeCart.length ? storeCart.map((cartItem) => <div className="drawer-item" key={cartItem.listingId}><div className="mini-image">{cartItem.productName.slice(0, 1)}</div><div><strong>{cartItem.productName}</strong><span>₹{cartItem.price}</span><div className="quantity"><button onClick={() => setCartQuantity(cartItem.listingId, cartItem.quantity - 1)}><Minus size={13} /></button><b>{cartItem.quantity}</b><button onClick={() => setCartQuantity(cartItem.listingId, cartItem.quantity + 1)}><Plus size={13} /></button></div></div><b>₹{cartItem.price * cartItem.quantity}</b></div>) : <div className="empty"><ShoppingBag size={30} /><p>Your cart is empty.</p></div>}</div>{storeCart.length > 0 && <div className="drawer-total"><div><span>Subtotal</span><strong>₹{total}</strong></div><small>Pay at pickup / cash on delivery</small><Link href="/cart" className="btn btn-primary">Continue to checkout</Link></div>}</aside></>}
-    <style jsx>{`
-      .store-header{height:72px;max-width:1200px;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}.store-header nav{display:flex;align-items:center;gap:24px;font-size:12px;color:#657169}.cart-button{border:0;background:#092922;color:white;border-radius: 5px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-weight:750}.cart-button b{background:#73AB95;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:9px}.store-hero{max-width:1160px;margin:12px auto 0;background:#092922;color:white;border-radius: 6px;padding:56px 65px;display:flex;align-items:center;justify-content:space-between;overflow:hidden;position:relative}.store-hero h1{font-size:48px;letter-spacing:-.055em;margin:16px 0 8px}.store-hero p{color:#bdd0c3}.store-kicker{font-size:11px;font-weight:800;color:#7CD4AC;display:flex;gap:7px;align-items:center;text-transform:uppercase;letter-spacing:.08em}.store-meta{display:flex;gap:18px;margin-top:23px;color:#c7d6cc;font-size:11px}.store-meta span{display:flex;align-items:center;gap:6px}.store-mark{width:170px;height:170px;border-radius:50%;display:grid;place-items:center;font-size:55px;font-weight:900;letter-spacing:-.07em;background:rgb(255 255 255 / 8%);border:1px solid rgb(255 255 255 / 12%);box-shadow:0 0 0 35px rgb(255 255 255 / 3%)}.store-main{max-width:1160px;margin:0 auto;padding:34px 0 80px}.store-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px}.categories{display:flex;gap:7px;flex-wrap:wrap}.categories button{border:1px solid #e1e6e2;background:white;color:#67736b;padding:9px 13px;border-radius: 4px;font-size:11px;font-weight:700}.categories .category-active{background:#F6F6F6;color:#2C645B;border-color:#A4B4CC}.store-search{display:flex;align-items:center;gap:8px;border:1px solid #e1e6e2;background:white;border-radius: 5px;padding:0 12px}.store-search input{border:0;outline:0;background:transparent;height:38px;width:170px;font-size:12px}.product-heading{margin:36px 0 18px}.product-heading h2{font-size:24px;margin:0;letter-spacing:-.035em}.product-heading p{font-size:11px;color:#7c867f;margin:5px 0}.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.product-card{background:white;border:1px solid #e4e9e5;border-radius: 6px;overflow:hidden;transition:.2s}.product-card:hover{transform:translateY(-3px);box-shadow:0 16px 35px rgb(29 54 38 / 8%)}.product-image{height:220px;display:grid;place-items:center;position:relative}.tone-0{background:#edf3ef}.tone-1{background:#f2eee9}.tone-2{background:#eaf0f3}.tone-3{background:#f2eef3}.product-image img{width:100%;height:100%;object-fit:cover}.product-placeholder{width:105px;height:140px;border-radius: 6px 6px 6px 6px;background:linear-gradient(145deg,#fff,#d9e7dd);box-shadow:0 16px 25px rgb(35 60 43 / 13%);display:grid;place-items:center;color:#2C645B;font-size:30px;font-weight:900}.stock-pill{position:absolute;top:12px;right:12px;background:rgb(255 255 255 / 88%);padding:5px 8px;border-radius: 4px;font-size:9px;font-weight:800}.product-body{padding:18px}.product-category{color:#2C645B;font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}.product-body h3{font-size:15px;margin:8px 0}.product-body p{color:#727d75;font-size:11px;line-height:1.55;height:34px;overflow:hidden}.product-footer{display:flex;align-items:center;justify-content:space-between;margin-top:17px}.product-footer strong{font-size:18px}.product-footer button{border:0;background:#F6F6F6;color:#2C645B;border-radius: 5px;padding:8px 11px;display:flex;gap:5px;align-items:center;font-weight:800;font-size:11px}.store-promise{max-width:1160px;margin:0 auto 50px;border:1px solid #e1e7e2;border-radius: 6px;padding:17px 20px;display:flex;gap:12px;align-items:center;color:#2C645B}.store-promise strong,.store-promise span{display:block}.store-promise strong{font-size:12px}.store-promise span{font-size:10px;color:#758078;margin-top:3px}.drawer-overlay{position:fixed;inset:0;z-index:40;border:0;background:rgb(15 24 18 / 35%)}.cart-drawer{position:fixed;z-index:50;inset:0 0 0 auto;width:min(430px,100%);background:white;display:flex;flex-direction:column;box-shadow:-20px 0 50px rgb(20 30 24 / 14%)}.drawer-head{padding:24px;display:flex;justify-content:space-between;border-bottom:1px solid #e7ebe8}.drawer-head h2{margin:0;font-size:22px}.drawer-head span{font-size:11px;color:#78837c}.drawer-head button{border:0;background:#f2f4f3;border-radius: 5px;width:37px;height:37px}.drawer-items{padding:20px;overflow:auto;flex:1}.drawer-item{display:grid;grid-template-columns:56px 1fr auto;gap:12px;padding:14px 0;border-bottom:1px solid #edf0ee}.mini-image{width:56px;height:62px;border-radius: 5px;background:#edf3ef;display:grid;place-items:center;color:#2C645B;font-weight:900}.drawer-item strong,.drawer-item span{display:block;font-size:12px}.drawer-item span{font-size:10px;color:#78837c;margin-top:5px}.quantity{display:flex;align-items:center;gap:10px;margin-top:10px}.quantity button{width:25px;height:25px;border:1px solid #e0e5e1;background:white;border-radius: 4px}.quantity b{font-size:11px}.drawer-total{border-top:1px solid #e3e8e4;padding:22px}.drawer-total>div{display:flex;justify-content:space-between}.drawer-total small{display:block;color:#79847d;font-size:10px;margin:8px 0 17px}.drawer-total .btn{width:100%}
-      @media(max-width:900px){.store-hero,.store-main,.store-promise{margin-left:16px;margin-right:16px}.product-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.store-header nav>a{display:none}.store-hero{padding:35px 26px}.store-hero h1{font-size:36px}.store-mark{display:none}.store-toolbar{align-items:stretch;flex-direction:column}.store-search input{width:100%}.product-grid{grid-template-columns:1fr}.product-image{height:250px}}
-    `}</style>
+    
+    <section className="animate-fade-in" style={{ maxWidth: 1200, margin: "0 auto 60px", background: "white", border: "1px solid var(--line)", borderRadius: 12, padding: "24px", display: "flex", gap: 16, alignItems: "center", color: "var(--brand)", boxShadow: "0 4px 20px rgba(4, 26, 21, 0.02)" }}>
+      <div style={{ width: 48, height: 48, borderRadius: 8, background: "var(--brand-soft)", display: "grid", placeItems: "center" }}><Sparkles size={24} /></div>
+      <div>
+        <strong style={{ fontSize: 15, color: "var(--ink)" }}>Powered by ScanMart AI</strong>
+        <span style={{ display: "block", fontSize: 13, color: "var(--muted)", marginTop: 4 }}>Product information is reviewed by the seller before publishing.</span>
+      </div>
+    </section>
+    
+    {drawer && <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", justifyContent: "flex-end" }}>
+      <button className="animate-fade-in" style={{ position: "absolute", inset: 0, background: "rgba(4, 26, 21, 0.4)", backdropFilter: "blur(4px)", border: 0 }} onClick={() => setDrawer(false)} />
+      <aside className="animate-slide-up" style={{ position: "relative", width: "100%", maxWidth: 440, background: "var(--canvas)", display: "flex", flexDirection: "column", boxShadow: "-20px 0 50px rgba(4, 26, 21, 0.15)", height: "100%" }}>
+        <div className="glass" style={{ padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+          <div><h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--ink)" }}>Your Cart</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>{storeCart.reduce((sum, item) => sum + item.quantity, 0)} items</span></div>
+          <button style={{ border: 0, background: "white", borderRadius: 8, width: 40, height: 40, display: "grid", placeItems: "center", color: "var(--muted)", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }} onClick={() => setDrawer(false)}><X size={20} /></button>
+        </div>
+        
+        <div style={{ padding: "24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
+          {storeCart.length ? storeCart.map((cartItem) => (
+            <div className="card shadow-soft" key={cartItem.listingId} style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: 16, padding: 16, alignItems: "center" }}>
+              <div style={{ width: 70, height: 70, borderRadius: 8, background: "var(--brand-soft)", display: "grid", placeItems: "center", color: "var(--brand)", fontWeight: 800 }}>
+                {cartItem.productName.slice(0, 1)}
+              </div>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                   <strong style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.4, paddingRight: 10 }}>{cartItem.productName}</strong>
+                   <strong style={{ fontSize: 15, color: "var(--ink)" }}>€{cartItem.price * cartItem.quantity}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                   <span style={{ fontSize: 12, color: "var(--muted)" }}>€{cartItem.price} each</span>
+                   <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--line)", borderRadius: 6, background: "white" }}>
+                      <button style={{ border: 0, background: "transparent", width: 28, height: 28, display: "grid", placeItems: "center", color: "var(--muted)" }} onClick={() => setCartQuantity(cartItem.listingId, cartItem.quantity - 1)}><Minus size={12} /></button>
+                      <b style={{ width: 28, height: 28, display: "grid", placeItems: "center", fontSize: 12, background: "var(--brand-soft)", color: "var(--ink)" }}>{cartItem.quantity}</b>
+                      <button style={{ border: 0, background: "transparent", width: 28, height: 28, display: "grid", placeItems: "center", color: "var(--muted)" }} onClick={() => setCartQuantity(cartItem.listingId, cartItem.quantity + 1)}><Plus size={12} /></button>
+                   </div>
+                </div>
+              </div>
+            </div>
+          )) : <div className="empty" style={{ paddingTop: 60 }}><ShoppingBag size={40} color="var(--brand)" style={{ opacity: 0.2, margin: "0 auto 16px" }} /><p style={{ fontSize: 16, color: "var(--ink)", fontWeight: 600 }}>Your cart is empty.</p></div>}
+        </div>
+        
+        {storeCart.length > 0 && (
+          <div className="glass" style={{ borderTop: "1px solid var(--line)", padding: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ fontSize: 15, color: "var(--muted)", fontWeight: 600 }}>Subtotal</span>
+              <strong style={{ fontSize: 24, color: "var(--ink)", fontWeight: 800 }}>€{total}</strong>
+            </div>
+            <Link href="/cart" className="btn btn-primary shadow-glow" style={{ width: "100%", minHeight: 52, fontSize: 16 }} onClick={() => setDrawer(false)}>
+              Checkout securely
+            </Link>
+            <p style={{ textAlign: "center", fontSize: 11, color: "var(--muted)", margin: "16px 0 0" }}>Pay securely at pickup. No online payment required.</p>
+          </div>
+        )}
+      </aside>
+    </div>}
   </div>;
 }
