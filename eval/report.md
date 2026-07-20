@@ -13,8 +13,8 @@
 | Metric | Score |
 |--------|-------|
 | Items evaluated | 22 |
-| **Overall accuracy** | **9/22 (41%)** |
-| Name accuracy | 14/22 (64%) |
+| **Overall accuracy** | **8/22 (36%)** |
+| Name accuracy | 13/22 (59%) |
 | Category accuracy | 11/22 (50%) |
 
 > **Price excluded from scoring.** Most physical product labels do not display
@@ -27,22 +27,22 @@
 | 001 | Rice Murukku | RUBY Snacks RIGE MURUKKU | 86% | ✓ | Snacks | Snacks | ✓ |
 | 002 | Voltage Stabilizer | Premier Voltage Stabilizer | 95% | ✓ | Electrical | Electrical | ✓ |
 | 003 | Dove Serum Bar | Dove serum bar | 100% | ✓ | Bath | Haircare | ✗ |
-| 004 | Prime Hydration | Clear | 28% | ✗ | Drinks | Beverages | ✓ |
+| 004 | Prime Hydration | META MOON | 42% | ✗ | Drinks | Beverages | ✓ |
 | 005 | Red Beans | Jaisreeram Super Market | 50% | ✗ | Food | Snacks | ✗ |
-| 006 | Pergale Milk Chocolate | PERGALE Milk Hazelnut | 74% | ✓ | Snacks | Snacks | ✓ |
-| 007 | Samba Rava | Samba Wheat Brokens | 86% | ✓ | Food | Food | ✓ |
+| 006 | Pergale Milk Chocolate | PERGALÉ MILK HAZELNUT | 70% | ✗ | Snacks | Snacks | ✓ |
+| 007 | Samba Rava | Mayil Mark Deluxe Samba Wheat Brokens | 86% | ✓ | Food | Food | ✓ |
 | 008 | Samsung Galaxy M56 5G | Galaxy M56 5G | 90% | ✓ | Electronics | Electronics | ✓ |
-| 009 | Aqua Lens Cleaner | Aqualens Lens Cleaner | 90% | ✓ | Essentials | Cleaning | ✗ |
-| 010 | Fenlong-MR Roll on | *ERROR* | 0% | ✗ | Medicine | — | ✗ |
+| 009 | Aqua Lens Cleaner | aqualens | 79% | ✓ | Essentials | Cleaning | ✗ |
+| 010 | Fenlong-MR Roll on | Fenlong-MR Roll-On | 94% | ✓ | Medicine | Medicine | ✓ |
 | 011 | Sunflower Oil | Gold Winner | 48% | ✗ | Food | Food | ✓ |
 | 012 | Disodium Hydrogen Cough Syrup | Disodium Hydrogen Citrate Syrup | 84% | ✓ | Medicine | Medicine | ✓ |
 | 013 | Curry Puli | CURRY PULI | 100% | ✓ | Food | Food | ✓ |
 | 014 | Natura Air Freshner | Natura Air Freshener | 97% | ✓ | Essentials | Personal Care | ✗ |
-| 015 | Prana Cough Formula | Prana Cough Formula | 100% | ✓ | Medicine | Medicine | ✓ |
+| 015 | Prana Cough Formula | PRANA COUGH FORMULA | 100% | ✓ | Medicine | Medicine | ✓ |
 | 016 | Skin Cream | VITAMIN E NUTRIENT CONCENTRATE | 49% | ✗ | Medicine | Haircare | ✗ |
-| 017 | Face Mist | green tea revitalizing face mist | 90% | ✓ | Essentials | Personal Care | ✗ |
+| 017 | Face Mist | nua | 36% | ✗ | Essentials | Personal Care | ✗ |
 | 018 | Vicks VapoRub | VapoRub Classic | 68% | ✗ | Medicine | Personal Care | ✗ |
-| 019 | Eveready AA Batteries | EVEREADY AA1015 | 66% | ✗ | Electronics | Electrical | ✗ |
-| 020 | MAGATOUCH plus | *ERROR* | 0% | ✗ | Medicine | — | ✗ |
-| 021 | Styling Cream | Aloe Boost Styling Cream | 90% | ✓ | Essentials | Haircare | ✗ |
-| 022 | RedBull Energy Drink | Red Bull | 84% | ✓ | Drinks | Beverages | ✓ |
+| 019 | Eveready AA Batteries | EVEREADY | 90% | ✓ | Electronics | Electrical | ✗ |
+| 020 | MAGATOUCH plus | Magnesium Citrate, Vitamin D3, Vitamin E & Zinc Tablets | 38% | ✗ | Medicine | Health Supplements | ✗ |
+| 021 | Styling Cream | taft | 30% | ✗ | Essentials | Haircare | ✗ |
+| 022 | RedBull Energy Drink | Red Bull | 84% | ✓ | Drinks | Energy Drink | ✗ |

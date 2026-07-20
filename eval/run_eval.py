@@ -66,9 +66,11 @@ Return ONLY valid JSON (no markdown, no backticks, no explanation before or afte
   "suggestedQuantity": 1,
   "suggestedPrice": null or number if a price is visible on the label,
   "confidence": 0.0 to 1.0,
-  "detectedText": ["key", "text", "fragments", "visible", "on", "label"],
-  "reasoningShort": "One sentence explaining your confidence"
+  "detectedText": ["at most 5 key text fragments from the label"],
+  "reasoningShort": "One sentence, max 15 words"
 }
+
+Keep the entire JSON response under 400 tokens. Descriptions must be 1-2 sentences; detectedText at most 5 items; reasoningShort at most 15 words.
 
 Category rule: Return exactly ONE category string from the list above. Never return multiple categories joined with | or any other delimiter — pick the single best match.
 
@@ -114,7 +116,7 @@ def call_nvidia(image_path: Path, api_key: str) -> dict:
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
             ],
         }],
-        "max_tokens": 2048,
+        "max_tokens": 1024,
         "temperature": 0.2,
     }
 
