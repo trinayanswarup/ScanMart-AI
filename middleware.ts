@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -15,40 +14,17 @@ export async function middleware(request: NextRequest) {
 
   if (isPublic) return NextResponse.next();
 
-  // Admin routes — check session when Supabase is configured
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Admin routes — check our simple auth cookie
+  const authCookie = request.cookies.get("auth_mode")?.value;
 
-  // If Supabase isn't configured, allow through (localStorage demo mode)
-  if (!supabaseUrl || !supabaseAnonKey) return NextResponse.next();
-
-  const response = NextResponse.next({ request });
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          request.cookies.set(name, value);
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  // If they aren't logged in as admin or demo, redirect to auth
+  if (authCookie !== "admin" && authCookie !== "demo") {
     const loginUrl = new URL("/auth", request.url);
-    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  return response;
+  // They are authenticated
+  return NextResponse.next();
 }
 
 export const config = {

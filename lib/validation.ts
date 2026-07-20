@@ -1,5 +1,22 @@
 import { z } from "zod";
 
+export const receiptLineItemSchema = z.object({
+  productName: z.string().min(1),
+  category: z.string().min(1),
+  quantity: z.number().min(0),
+  unitPrice: z.number().min(0).optional(),
+  confidence: z.number().min(0).max(1),
+});
+
+export const receiptExtractionSchema = z.object({
+  items: z.array(receiptLineItemSchema),
+  storeName: z.string().optional(),
+  receiptDate: z.string().optional(),
+});
+
+export type ReceiptLineItem = z.infer<typeof receiptLineItemSchema>;
+export type ReceiptExtraction = z.infer<typeof receiptExtractionSchema>;
+
 export const productAIExtractionSchema = z.object({
   productName: z.string().min(1),
   brand: z.string().optional(),

@@ -146,3 +146,61 @@ describe("POST /api/extract — JSON cleaning", () => {
     expect(body.reasoningShort.length).toBeGreaterThan(0);
   });
 });
+
+describe("POST /api/extract — receipt mode", () => {
+  beforeEach(() => { process.env.NVIDIA_API_KEY = "test-key"; });
+  afterEach(() => { delete process.env.NVIDIA_API_KEY; vi.restoreAllMocks(); });
+
+  it("returns items array when AI response is valid receipt JSON", async () => {
+    const receiptJson = JSON.stringify({
+      items: [
+        { productName: "Dove Shampoo 650ml", category: "Haircare", quantity: 12, unitPrice: 349, confidence: 0.92 },
+        { productName: "Cold Brew 250ml", category: "Beverages", quantity: 24, unitPrice: 89, confidence: 0.85 },
+      ],
+      storeName: "Metro Cash & Carry",
+      receiptDate: "2026-07-20",
+    });
+    global.fetch = makeNvidiaFetch(receiptJson);
+
+    const res = await POST(mockReq({ imageBase64: "abc123", mimeType: "image/jpeg", mode: "receipt" }));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { items: unknown[]; storeName: string };
+    expect(body.items).toHaveLength(2);
+    expect(body.storeName).toBe("Metro Cash & Carry");
+  });
+
+  it("strips markdown fences and leading prose from receipt response", async () => {
+    const withProse = "Here are the items I found:\n```json\n" + JSON.stringify({
+      items: [{ productName: "Parle-G Biscuits", category: "Snacks", quantity: 6, unitPrice: 25, confidence: 0.96 }],
+    }) + "\n```";
+    global.fetch = makeNvidiaFetch(withProse);
+
+    const res = await POST(mockReq({ imageBase64: "abc123", mimeType: "image/jpeg", mode: "receipt" }));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { items: Array<{ productName: string }> };
+    expect(body.items[0].productName).toBe("Parle-G Biscuits");
+  });
+
+  it("returns empty items array when AI returns no line items", async () => {
+    global.fetch = makeNvidiaFetch(JSON.stringify({ items: [], storeName: null, receiptDate: null }));
+
+    const res = await POST(mockReq({ imageBase64: "abc123", mimeType: "image/jpeg", mode: "receipt" }));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { items: unknown[] };
+    expect(body.items).toHaveLength(0);
+  });
+
+  it("falls back to defaults when item fields are missing or null", async () => {
+    global.fetch = makeNvidiaFetch(JSON.stringify({
+      items: [{ productName: "", category: null, quantity: null, unitPrice: null, confidence: null }],
+    }));
+
+    const res = await POST(mockReq({ imageBase64: "abc123", mimeType: "image/jpeg", mode: "receipt" }));
+    expect(res.status).toBe(200);
+    const body = await res.json() as { items: Array<{ productName: string; category: string; quantity: number; confidence: number }> };
+    expect(body.items[0].productName).toBe("Unknown Product");
+    expect(body.items[0].category).toBe("Other");
+    expect(body.items[0].quantity).toBe(1);
+    expect(body.items[0].confidence).toBe(0.5);
+  });
+});

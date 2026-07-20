@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Barcode, Camera, CheckCircle2, FileImage, ImageUp, LoaderCircle,
+  Barcode, Camera, CheckCircle2, FileImage, FileText, ImageUp, LoaderCircle,
   RefreshCw, ScanLine, Sparkles, Type, Wifi, WifiOff, X,
 } from "lucide-react";
 import { useApp } from "@/components/app-provider";
@@ -63,11 +64,20 @@ async function fileToBase64(file: File): Promise<{ base64: string; mimeType: str
   });
 }
 
-type Mode = "photo" | "barcode" | "text";
+type Mode = "photo" | "barcode" | "text" | "receipt";
+
+type ReceiptRow = {
+  checked: boolean;
+  productName: string;
+  category: string;
+  quantity: number;
+  unitPrice: number | undefined;
+  confidence: number;
+};
 
 export default function AdminScanPage() {
   const { storeId } = useParams<{ storeId: string }>();
-  const { getStore, addInventory } = useApp();
+  const { getStore, addInventory, addInventoryBulk } = useApp();
   const activeStore = getStore(storeId);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -88,6 +98,10 @@ export default function AdminScanPage() {
   const [result, setResult] = useState<ProductAIExtraction | null>(null);
   const [error, setError] = useState("");
   const [usedAI, setUsedAI] = useState(false);
+
+  // Receipt-specific state
+  const [receiptRows, setReceiptRows] = useState<ReceiptRow[]>([]);
+  const [receiptSummary, setReceiptSummary] = useState("");
 
   useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
 
@@ -229,6 +243,57 @@ export default function AdminScanPage() {
     setScanProgress("");
   };
 
+  const analyzeReceipt = async () => {
+    if (!file) { setError("Add a receipt photo first."); return; }
+    setLoading(true); setError(""); setReceiptSummary(""); setScanProgress("Extracting line items from receipt…");
+    try {
+      const { base64, mimeType } = await fileToBase64(file);
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType, mode: "receipt", businessType: activeStore?.businessType ?? "grocery" }),
+      });
+      if (!res.ok) {
+        setError("Failed to analyze receipt. Try again or check your connection.");
+        setLoading(false); setScanProgress(""); return;
+      }
+      const data = await res.json() as { items?: Array<{ productName: string; category: string; quantity: number; unitPrice?: number; confidence: number }> };
+      if (!data.items?.length) {
+        setError("No line items found in this image. Try a clearer photo of the receipt.");
+        setLoading(false); setScanProgress(""); return;
+      }
+      setReceiptRows(data.items.map((item) => ({
+        checked: true,
+        productName: item.productName,
+        category: item.category,
+        quantity: Math.max(1, item.quantity),
+        unitPrice: item.unitPrice,
+        confidence: item.confidence,
+      })));
+    } catch {
+      setError("Unexpected error. Please try again.");
+    }
+    setLoading(false); setScanProgress("");
+  };
+
+  const updateReceiptRow = (i: number, patch: Partial<ReceiptRow>) =>
+    setReceiptRows((rows) => rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+
+  const saveReceipt = () => {
+    const toSave = receiptRows.filter((r) => r.checked && r.productName.trim());
+    if (!toSave.length) { setError("Select at least one item to add."); return; }
+    addInventoryBulk(storeId, toSave.map((r) => ({
+      name: r.productName.trim(),
+      category: r.category.trim() || "Other",
+      quantity: r.quantity,
+      price: r.unitPrice,
+    })));
+    const count = toSave.length;
+    setReceiptSummary(`${count} item${count === 1 ? "" : "s"} added to inventory.`);
+    setReceiptRows([]);
+    setFile(null); setPreview("");
+  };
+
   const update = (key: keyof ProductAIExtraction, value: string | number) =>
     result && setResult({ ...result, [key]: value });
 
@@ -266,6 +331,15 @@ export default function AdminScanPage() {
 
   const resetScan = () => { setResult(null); setOriginal(null); setFile(null); setPreview(""); setError(""); };
 
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setResult(null); setError("");
+    setFile(null); setPreview("");
+    setReceiptRows([]); setReceiptSummary("");
+  };
+
+  const checkedCount = receiptRows.filter((r) => r.checked).length;
+
   return (
     <div className="page-wrap" style={{ maxWidth: 720 }}>
       <div className="page-header">
@@ -277,10 +351,15 @@ export default function AdminScanPage() {
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 24, background: "var(--canvas)", padding: 4, borderRadius: 8, width: "fit-content" }}>
-        {([["photo", "Photo / Camera", FileImage], ["barcode", "Barcode", Barcode], ["text", "Text Entry", Type]] as const).map(([m, label, Icon]) => (
+        {([
+          ["photo", "Photo / Camera", FileImage],
+          ["barcode", "Barcode", Barcode],
+          ["text", "Text Entry", Type],
+          ["receipt", "Receipt / Invoice", FileText],
+        ] as const).map(([m, label, Icon]) => (
           <button
             key={m}
-            onClick={() => { setMode(m); setResult(null); setError(""); }}
+            onClick={() => switchMode(m)}
             style={{
               display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 6, border: "none",
               background: mode === m ? "var(--surface)" : "transparent",
@@ -453,6 +532,180 @@ export default function AdminScanPage() {
         </div>
       )}
 
+      {mode === "receipt" && (
+        <div className="card" style={{ padding: 24 }}>
+          <div
+            onDrop={drop}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => !file && inputRef.current?.click()}
+            style={{
+              border: `2px dashed ${file ? "var(--sage)" : "var(--line)"}`,
+              borderRadius: 8, padding: 32, textAlign: "center",
+              background: file ? "var(--brand-soft)" : "var(--canvas)",
+              cursor: file ? "default" : "pointer", transition: ".18s",
+              position: "relative",
+            }}
+          >
+            {file && preview ? (
+              <div>
+                <img src={preview} alt="Receipt preview" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 6, objectFit: "contain" }} />
+                <button
+                  onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(""); setReceiptRows([]); }}
+                  style={{ position: "absolute", top: 10, right: 10, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "50%", width: 28, height: 28, display: "grid", placeItems: "center", cursor: "pointer" }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ width: 48, height: 48, borderRadius: 8, background: "var(--canvas)", display: "grid", placeItems: "center", margin: "0 auto 12px", color: "var(--brand)" }}>
+                  <FileText size={22} />
+                </div>
+                <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>Drop your receipt or invoice here</p>
+                <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>or click to browse · JPG, PNG, WEBP</p>
+              </div>
+            )}
+          </div>
+          <input ref={inputRef} type="file" accept="image/*" onChange={onFile} style={{ display: "none" }} />
+          <button className="btn btn-secondary" style={{ marginTop: 14 }} onClick={() => inputRef.current?.click()}>
+            <FileImage size={15} /> Choose file
+          </button>
+
+          {error && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</p>}
+          <button
+            className="btn btn-primary"
+            style={{ width: "100%", marginTop: 16, minHeight: 48 }}
+            onClick={analyzeReceipt}
+            disabled={loading || !file}
+          >
+            {loading
+              ? <><LoaderCircle size={16} style={{ animation: "spin 1s linear infinite" }} />{scanProgress || "Analyzing receipt…"}</>
+              : <><Sparkles size={16} />Extract line items</>}
+          </button>
+        </div>
+      )}
+
+      {/* ─── Receipt results table ─── */}
+      {mode === "receipt" && receiptRows.length > 0 && (
+        <div className="card" style={{ marginTop: 20, padding: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <div className="eyebrow">Receipt scan</div>
+              <h2 style={{ margin: "6px 0 0", fontSize: 18 }}>Review extracted items</h2>
+            </div>
+            <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600 }}>
+              {checkedCount} of {receiptRows.length} selected
+            </span>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--line)" }}>
+                  <th style={{ width: 36, padding: "8px 12px 8px 0", textAlign: "left" }}>
+                    <input
+                      type="checkbox"
+                      checked={receiptRows.length > 0 && receiptRows.every((r) => r.checked)}
+                      onChange={(e) => setReceiptRows((rows) => rows.map((r) => ({ ...r, checked: e.target.checked })))}
+                    />
+                  </th>
+                  {["Product", "Category", "Qty", "Price (₹)", "Conf."].map((h) => (
+                    <th key={h} style={{ textAlign: h === "Qty" || h === "Price (₹)" || h === "Conf." ? "right" : "left", padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {receiptRows.map((row, i) => {
+                  const conf = row.confidence;
+                  const confColor = conf >= 0.8 ? "#7CD4AC" : conf >= 0.6 ? "#EB774D" : "#F85458";
+                  return (
+                    <tr key={i} style={{ borderBottom: "1px solid var(--line)", opacity: row.checked ? 1 : 0.4, transition: "opacity .15s" }}>
+                      <td style={{ padding: "10px 12px 10px 0" }}>
+                        <input type="checkbox" checked={row.checked} onChange={(e) => updateReceiptRow(i, { checked: e.target.checked })} />
+                      </td>
+                      <td style={{ padding: "10px 8px" }}>
+                        <input
+                          className="input"
+                          style={{ minWidth: 150, padding: "5px 8px", fontSize: 13 }}
+                          value={row.productName}
+                          onChange={(e) => updateReceiptRow(i, { productName: e.target.value })}
+                        />
+                      </td>
+                      <td style={{ padding: "10px 8px" }}>
+                        <input
+                          className="input"
+                          style={{ minWidth: 100, padding: "5px 8px", fontSize: 13 }}
+                          value={row.category}
+                          onChange={(e) => updateReceiptRow(i, { category: e.target.value })}
+                        />
+                      </td>
+                      <td style={{ padding: "10px 8px", textAlign: "right" }}>
+                        <input
+                          className="input"
+                          type="number"
+                          min="0"
+                          style={{ width: 64, padding: "5px 8px", fontSize: 13, textAlign: "right" }}
+                          value={row.quantity}
+                          onChange={(e) => updateReceiptRow(i, { quantity: Math.max(0, parseInt(e.target.value) || 0) })}
+                        />
+                      </td>
+                      <td style={{ padding: "10px 8px", textAlign: "right" }}>
+                        <input
+                          className="input"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="—"
+                          style={{ width: 80, padding: "5px 8px", fontSize: 13, textAlign: "right" }}
+                          value={row.unitPrice ?? ""}
+                          onChange={(e) => updateReceiptRow(i, { unitPrice: e.target.value !== "" ? parseFloat(e.target.value) : undefined })}
+                        />
+                      </td>
+                      <td style={{ padding: "10px 8px", textAlign: "right" }}>
+                        <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700, color: confColor, background: confColor + "22", border: `1px solid ${confColor}44` }}>
+                          {Math.round(conf * 100)}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {error && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 12 }}>{error}</p>}
+
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <button
+              className="btn btn-primary"
+              style={{ flex: 1, minHeight: 46 }}
+              onClick={saveReceipt}
+              disabled={checkedCount === 0}
+            >
+              <CheckCircle2 size={16} />
+              Add {checkedCount} item{checkedCount === 1 ? "" : "s"} to inventory
+            </button>
+            <button className="btn btn-secondary" onClick={() => { setReceiptRows([]); setFile(null); setPreview(""); }}>
+              <RefreshCw size={15} /> Scan again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Receipt success summary ─── */}
+      {mode === "receipt" && receiptSummary && (
+        <div className="notice" style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 10 }}>
+          <CheckCircle2 size={16} />
+          {receiptSummary}
+          <Link href={`/admin/${storeId}/inventory`} style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: "var(--brand)", whiteSpace: "nowrap" }}>
+            View inventory →
+          </Link>
+        </div>
+      )}
+
+      {/* ─── Single-product result ─── */}
       {result && (
         <div className="card" style={{ marginTop: 20, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
@@ -495,7 +748,7 @@ export default function AdminScanPage() {
               <textarea className="textarea" value={result.description} onChange={(e) => update("description", e.target.value)} style={{ minHeight: 80 }} />
             </div>
             <div>
-              <label className="label">Price (€)</label>
+              <label className="label">Price (₹)</label>
               <input className="input" type="number" min="0" value={result.suggestedPrice ?? ""} onChange={(e) => update("suggestedPrice", parseFloat(e.target.value))} placeholder="Enter price" />
             </div>
             <div>
@@ -512,8 +765,8 @@ export default function AdminScanPage() {
 
           {result.detectedText.length > 0 && (
             <div style={{ marginTop: 16, background: "var(--canvas)", borderRadius: 6, padding: "10px 14px" }}>
-              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "#65777a", textTransform: "uppercase", letterSpacing: ".08em" }}>Detected text</p>
-              <p style={{ margin: 0, fontSize: 12, color: "#65777a", lineHeight: 1.7 }}>{result.detectedText.join(" · ")}</p>
+              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>Detected text</p>
+              <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.7 }}>{result.detectedText.join(" · ")}</p>
             </div>
           )}
 

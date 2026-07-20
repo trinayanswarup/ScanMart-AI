@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
 import { useApp } from "@/components/app-provider";
 import { useTheme } from "@/components/theme-provider";
-import { ArrowLeftRight, Box, Home, ScanLine, Settings, ShoppingBag, Activity, Search, Bell, Moon, Sun, User, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowLeftRight, Box, Home, ScanLine, Settings, ShoppingBag, Activity, Search, Bell, Moon, Sun, User, Clock, CheckCircle2, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 export default function AdminStoreLayout({ children }: { children: React.ReactNode }) {
   const { storeId } = useParams<{ storeId: string }>();
   const { state, getStoreOrders } = useApp();
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   
   const [showNotifs, setShowNotifs] = useState(false);
@@ -177,6 +178,17 @@ export default function AdminStoreLayout({ children }: { children: React.ReactNo
                 <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>Store Admin</div>
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>Business owner</div>
               </div>
+              <button 
+                onClick={() => {
+                  document.cookie = "auth_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                  router.push("/auth");
+                }}
+                title="Sign out"
+                style={{ marginLeft: 8, background: "transparent", border: "none", cursor: "pointer", color: "var(--danger)", display: "flex", alignItems: "center", justifyContent: "center", padding: 6, borderRadius: 6 }}
+                className="hover:bg-[rgba(239,68,68,0.1)]"
+              >
+                <LogOut size={18} />
+              </button>
             </div>
           </div>
         </header>

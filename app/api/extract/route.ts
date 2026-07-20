@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { productAIExtractionSchema } from "@/lib/validation";
+import { productAIExtractionSchema, receiptExtractionSchema } from "@/lib/validation";
 
-const PROMPT = `You are a product label analyzer for ScanMart AI, an inventory management system for small businesses.
+const PRODUCT_PROMPT = `You are a product label analyzer for ScanMart AI, an inventory management system for small businesses.
 Analyze the product image carefully and extract structured data.
 
 Business context: {BUSINESS_TYPE}
@@ -28,6 +28,20 @@ Confidence guide:
 
 Look carefully at the image even if partially obscured by fingers, angled, or has glare. Use brand logos, colors, can/bottle shape, and any visible text.`;
 
+const RECEIPT_PROMPT = `You are analyzing a supplier receipt or invoice image for a retail business.
+Extract every line item as a product entry. Return ONLY valid JSON:
+{
+  "items": [
+    { "productName": "...", "category": "...", "quantity": number, "unitPrice": number or null, "confidence": 0.0-1.0 }
+  ],
+  "storeName": "supplier name if visible, or null",
+  "receiptDate": "date if visible as YYYY-MM-DD, or null"
+}
+Extract every distinct product line item. If price or quantity is unclear, use your best estimate and lower confidence for that item.
+Ignore subtotals, tax lines, and grand totals — only individual product line items.
+Categories: Electronics | Haircare | Styling | Personal Care | Coffee | Dairy | Snacks | Beverages | Cleaning | Tools | Food | Other
+CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explanatory text.`;
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as {
@@ -36,38 +50,41 @@ export async function POST(req: NextRequest) {
       ocrText?: string;
       userText?: string;
       businessType?: string;
+      mode?: "product" | "receipt";
     };
+
+    const mode = body.mode ?? "product";
 
     const apiKey = process.env.NVIDIA_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: "NVIDIA_API_KEY not configured" }, { status: 500 });
     }
 
-    const prompt = PROMPT.replace("{BUSINESS_TYPE}", body.businessType ?? "general retail");
+    if (!body.imageBase64 && !body.userText?.trim() && !body.ocrText?.trim()) {
+      return NextResponse.json({ error: "No input provided" }, { status: 400 });
+    }
 
     const contentParts: Array<Record<string, unknown>> = [];
 
-    let textPrompt = prompt;
-    if (body.ocrText?.trim()) {
-      textPrompt += `\n\nOCR text also detected (may be unreliable, use image as primary source): ${body.ocrText.trim()}`;
+    if (mode === "receipt") {
+      let textPrompt = RECEIPT_PROMPT;
+      if (body.userText?.trim()) textPrompt += `\n\nAdditional context: ${body.userText.trim()}`;
+      contentParts.push({ type: "text", text: textPrompt });
+    } else {
+      const basePrompt = PRODUCT_PROMPT.replace("{BUSINESS_TYPE}", body.businessType ?? "general retail");
+      let textPrompt = basePrompt;
+      if (body.ocrText?.trim()) textPrompt += `\n\nOCR text also detected (may be unreliable, use image as primary source): ${body.ocrText.trim()}`;
+      if (body.userText?.trim()) textPrompt += `\n\nUser-provided hint: ${body.userText.trim()}`;
+      textPrompt += "\n\nCRITICAL: Return ONLY the raw JSON object. Do not include any markdown formatting, headers, bold text, or explanatory text before or after the JSON.";
+      textPrompt += "\n\nReturn JSON only:";
+      contentParts.push({ type: "text", text: textPrompt });
     }
-    if (body.userText?.trim()) {
-      textPrompt += `\n\nUser-provided hint: ${body.userText.trim()}`;
-    }
-    textPrompt += "\n\nCRITICAL: Return ONLY the raw JSON object. Do not include any markdown formatting, headers, bold text, or explanatory text before or after the JSON.";
-    textPrompt += "\n\nReturn JSON only:";
-
-    contentParts.push({ type: "text", text: textPrompt });
 
     if (body.imageBase64 && body.mimeType) {
       contentParts.push({
         type: "image_url",
         image_url: { url: `data:${body.mimeType};base64,${body.imageBase64}` },
       });
-    }
-
-    if (!body.imageBase64 && !body.userText?.trim() && !body.ocrText?.trim()) {
-      return NextResponse.json({ error: "No input provided" }, { status: 400 });
     }
 
     // Add a 25-second timeout so the UI doesn't hang forever if NVIDIA API stalls
@@ -85,11 +102,11 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "meta/llama-3.2-11b-vision-instruct",
         messages: [{ role: "user", content: contentParts }],
-        max_tokens: 512,
+        max_tokens: mode === "receipt" ? 1024 : 512,
         temperature: 0.2,
       }),
     });
-    
+
     clearTimeout(timeoutId);
 
     if (!response.ok) {
@@ -107,7 +124,7 @@ export async function POST(req: NextRequest) {
     // Strip markdown code fences and any leading/trailing prose
     let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
 
-    // Extract just the JSON object if there's surrounding text (e.g. "**Product Analysis**\n{...}")
+    // Extract just the JSON object if there's surrounding text
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       cleaned = jsonMatch[0];
@@ -119,6 +136,22 @@ export async function POST(req: NextRequest) {
     } catch (parseErr) {
       console.error("[/api/extract] Failed to parse AI response:", raw);
       throw parseErr;
+    }
+
+    if (mode === "receipt") {
+      const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+      const validated = receiptExtractionSchema.parse({
+        items: (rawItems as Record<string, unknown>[]).map((item) => ({
+          productName: (typeof item.productName === "string" && item.productName.trim()) || "Unknown Product",
+          category: (typeof item.category === "string" && item.category.trim()) || "Other",
+          quantity: typeof item.quantity === "number" && item.quantity >= 0 ? item.quantity : 1,
+          unitPrice: typeof item.unitPrice === "number" && item.unitPrice >= 0 ? item.unitPrice : undefined,
+          confidence: typeof item.confidence === "number" ? Math.min(1, Math.max(0, item.confidence)) : 0.5,
+        })),
+        storeName: typeof parsed.storeName === "string" ? parsed.storeName : undefined,
+        receiptDate: typeof parsed.receiptDate === "string" ? parsed.receiptDate : undefined,
+      });
+      return NextResponse.json(validated);
     }
 
     const validated = productAIExtractionSchema.parse({
@@ -135,9 +168,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(validated);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[/api/extract]", err);
-    if (err.name === 'AbortError') {
+    if (err instanceof Error && err.name === "AbortError") {
       return NextResponse.json({ error: "AI service is currently busy. Please try again or enter details manually." }, { status: 504 });
     }
     return NextResponse.json({ error: "Extraction failed" }, { status: 500 });

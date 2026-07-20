@@ -18,6 +18,7 @@ interface AppContextValue {
   getStoreListings: (id: string) => ReturnType<AppState["listings"]["filter"]>;
   getStoreOrders: (id: string) => Order[];
   addInventory: (storeId: string, item: NewInventory, original?: ProductAIExtraction, corrected?: ProductAIExtraction) => string;
+  addInventoryBulk: (storeId: string, items: Array<{ name: string; category: string; quantity: number; price?: number }>) => number;
   updateInventory: (id: string, patch: Partial<InventoryItem>) => void;
   publishItem: (id: string) => void;
   saveListing: (inventoryItemId: string, draft: ListingDraft) => { ok: boolean; message: string };
@@ -90,6 +91,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     return id;
   }, []);
+
+  // Bulk receipt import — uses source:"receipt", no workflow executions (avoids flooding Activity feed).
+  const addInventoryBulk = useCallback((
+    storeId: string,
+    items: Array<{ name: string; category: string; quantity: number; price?: number }>,
+  ) => {
+    if (items.length === 0) return 0;
+    const threshold = state.stores.find((s) => s.id === storeId)?.lowStockThreshold ?? 3;
+    const newItems: InventoryItem[] = items.map((item) => ({
+      id: makeId("inv"),
+      businessId: storeId,
+      name: item.name,
+      category: item.category,
+      description: "",
+      quantity: item.quantity,
+      unit: "pcs",
+      lowStockThreshold: threshold,
+      price: item.price,
+      source: "receipt" as const,
+      status: "active" as const,
+      createdAt: new Date().toISOString(),
+    }));
+    setState((current) => ({ ...current, inventory: [...newItems, ...current.inventory] }));
+    return items.length;
+  }, [state.stores]);
 
   const updateInventory = useCallback((id: string, patch: Partial<InventoryItem>) => {
     setState((current) => ({ ...current, inventory: current.inventory.map((item) => item.id === id ? { ...item, ...patch } : item) }));
@@ -303,14 +329,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     state, hydrated, currentStoreId, setCurrentStoreId,
     getStore, getStoreInventory, getStoreListings, getStoreOrders,
-    addInventory, updateInventory, publishItem, saveListing,
+    addInventory, addInventoryBulk, updateInventory, publishItem, saveListing,
     addToCart, removeFromCart, setCartQuantity, clearCart,
     placeOrder, updateOrderStatus, approveWorkflowExecution,
     updateBusiness, resetDemo,
   }), [
     state, hydrated, currentStoreId,
     getStore, getStoreInventory, getStoreListings, getStoreOrders,
-    addInventory, updateInventory, publishItem, saveListing,
+    addInventory, addInventoryBulk, updateInventory, publishItem, saveListing,
     addToCart, removeFromCart, setCartQuantity, clearCart,
     placeOrder, updateOrderStatus, approveWorkflowExecution,
     updateBusiness, resetDemo,

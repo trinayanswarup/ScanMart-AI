@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { productAIExtractionSchema } from "@/lib/validation";
+import { productAIExtractionSchema, receiptLineItemSchema, receiptExtractionSchema } from "@/lib/validation";
 
 const VALID = {
   productName: "Dove Intense Repair Shampoo",
@@ -83,5 +83,77 @@ describe("productAIExtractionSchema", () => {
   it("rejects negative suggestedPrice", () => {
     const r = productAIExtractionSchema.safeParse({ ...VALID, suggestedPrice: -5 });
     expect(r.success).toBe(false);
+  });
+});
+
+const VALID_RECEIPT_ITEM = {
+  productName: "Dove Shampoo 650ml",
+  category: "Haircare",
+  quantity: 12,
+  unitPrice: 349,
+  confidence: 0.91,
+};
+
+describe("receiptLineItemSchema", () => {
+  it("accepts a fully-populated line item", () => {
+    const r = receiptLineItemSchema.safeParse(VALID_RECEIPT_ITEM);
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts a line item without unitPrice (supplier receipt may omit prices)", () => {
+    const { unitPrice: _omit, ...rest } = VALID_RECEIPT_ITEM;
+    const r = receiptLineItemSchema.safeParse(rest);
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.unitPrice).toBeUndefined();
+  });
+
+  it("rejects empty productName", () => {
+    expect(receiptLineItemSchema.safeParse({ ...VALID_RECEIPT_ITEM, productName: "" }).success).toBe(false);
+  });
+
+  it("rejects negative quantity", () => {
+    expect(receiptLineItemSchema.safeParse({ ...VALID_RECEIPT_ITEM, quantity: -1 }).success).toBe(false);
+  });
+
+  it("rejects confidence above 1.0", () => {
+    expect(receiptLineItemSchema.safeParse({ ...VALID_RECEIPT_ITEM, confidence: 1.01 }).success).toBe(false);
+  });
+
+  it("rejects negative unitPrice", () => {
+    expect(receiptLineItemSchema.safeParse({ ...VALID_RECEIPT_ITEM, unitPrice: -10 }).success).toBe(false);
+  });
+});
+
+describe("receiptExtractionSchema", () => {
+  it("accepts a valid receipt with multiple items", () => {
+    const r = receiptExtractionSchema.safeParse({
+      items: [VALID_RECEIPT_ITEM, { ...VALID_RECEIPT_ITEM, productName: "Cold Brew 250ml", category: "Beverages" }],
+      storeName: "Metro Cash & Carry",
+      receiptDate: "2026-07-20",
+    });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.items).toHaveLength(2);
+    expect(r.data.storeName).toBe("Metro Cash & Carry");
+  });
+
+  it("accepts an empty items array (AI found no line items)", () => {
+    const r = receiptExtractionSchema.safeParse({ items: [] });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.items).toHaveLength(0);
+  });
+
+  it("accepts receipt without optional storeName and receiptDate", () => {
+    const r = receiptExtractionSchema.safeParse({ items: [VALID_RECEIPT_ITEM] });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.storeName).toBeUndefined();
+    expect(r.data.receiptDate).toBeUndefined();
+  });
+
+  it("rejects when items array is missing entirely", () => {
+    expect(receiptExtractionSchema.safeParse({ storeName: "Store" }).success).toBe(false);
   });
 });
