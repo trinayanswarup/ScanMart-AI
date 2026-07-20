@@ -4,7 +4,7 @@ const now = new Date().toISOString();
 const d = (daysAgo: number) => new Date(Date.now() - daysAgo * 86400000).toISOString();
 
 export const initialState: AppState = {
-  company: { id: "co_01", name: "ScanMart Demo" },
+  company: { id: "co_01", name: "ScanMart" },
   stores: [
     { id: "biz_salon_01", name: "Urban Glow Salon", slug: "urban-glow", businessType: "salon", lowStockThreshold: 3 },
     { id: "biz_cafe_01", name: "Corner Café", slug: "corner-cafe", businessType: "cafe", lowStockThreshold: 5 },

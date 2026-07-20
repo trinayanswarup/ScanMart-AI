@@ -59,10 +59,10 @@ export default function AdminSettingsPage() {
       </section>
 
       <section className="card" style={{ padding: 26, marginTop: 20, borderColor: "#f0d8d5" }}>
-        <h2 className="section-title">Demo data</h2>
-        <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>Reset all stores to the original demo state.</p>
-        <button className="btn btn-danger" onClick={() => { if (confirm("Reset all demo changes?")) { resetDemo(); location.reload(); } }}>
-          <RotateCcw size={16} />Reset demo workspace
+        <h2 className="section-title">Reset workspace</h2>
+        <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>Reset all stores to their original state.</p>
+        <button className="btn btn-danger" onClick={() => { if (confirm("Reset all changes?")) { resetDemo(); location.reload(); } }}>
+          <RotateCcw size={16} />Reset workspace
         </button>
       </section>
     </div>

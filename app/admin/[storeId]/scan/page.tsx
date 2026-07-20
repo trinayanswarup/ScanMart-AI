@@ -276,7 +276,7 @@ export default function AdminScanPage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 24, background: "#F6F6F6", padding: 4, borderRadius: 8, width: "fit-content" }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 24, background: "var(--canvas)", padding: 4, borderRadius: 8, width: "fit-content" }}>
         {([["photo", "Photo / Camera", FileImage], ["barcode", "Barcode", Barcode], ["text", "Text Entry", Type]] as const).map(([m, label, Icon]) => (
           <button
             key={m}
@@ -319,14 +319,14 @@ export default function AdminScanPage() {
                     <img src={preview} alt="Product preview" style={{ maxHeight: 240, maxWidth: "100%", borderRadius: 6, objectFit: "contain" }} />
                     <button
                       onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(""); setResult(null); }}
-                      style={{ position: "absolute", top: 10, right: 10, background: "white", border: "1px solid #d9e0db", borderRadius: "50%", width: 28, height: 28, display: "grid", placeItems: "center", cursor: "pointer" }}
+                      style={{ position: "absolute", top: 10, right: 10, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "50%", width: 28, height: 28, display: "grid", placeItems: "center", cursor: "pointer" }}
                     >
                       <X size={14} />
                     </button>
                   </div>
                 ) : (
                   <div>
-                    <div style={{ width: 48, height: 48, borderRadius: 8, background: "#F6F6F6", display: "grid", placeItems: "center", margin: "0 auto 12px", color: "#2C645B" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 8, background: "var(--canvas)", display: "grid", placeItems: "center", margin: "0 auto 12px", color: "var(--brand)" }}>
                       <ImageUp size={22} />
                     </div>
                     <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>Drop a product photo here</p>
@@ -409,7 +409,7 @@ export default function AdminScanPage() {
               onDrop={drop}
               onDragOver={(e) => e.preventDefault()}
               onClick={() => inputRef.current?.click()}
-              style={{ border: "2px dashed #d9e0db", borderRadius: 8, padding: 20, textAlign: "center", cursor: "pointer", background: "#fbfcfb" }}
+              style={{ border: "2px dashed var(--line)", borderRadius: 8, padding: 20, textAlign: "center", cursor: "pointer", background: "var(--canvas)" }}
             >
               {file
                 ? <p style={{ margin: 0, fontSize: 13, color: "#2C645B", fontWeight: 600 }}>{file.name}</p>
@@ -461,7 +461,7 @@ export default function AdminScanPage() {
               <h2 style={{ margin: "6px 0 0", fontSize: 18 }}>Review and save</h2>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#F6F6F6", border: "1px solid #e1e9e9", borderRadius: 4, padding: "4px 10px", fontSize: 12, fontWeight: 600 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "var(--canvas)", border: "1px solid var(--line)", borderRadius: 4, padding: "4px 10px", fontSize: 12, fontWeight: 600 }}>
                 {usedAI ? <Wifi size={12} color="#2C645B" /> : <WifiOff size={12} color="#65777a" />}
                 {usedAI ? "AI Vision" : "Offline mode"}
               </span>
@@ -472,7 +472,7 @@ export default function AdminScanPage() {
           </div>
 
           {result.confidence < 0.6 && (
-            <div style={{ background: "#FFF3F3", border: "1px solid #F8545820", borderRadius: 6, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "#9D2020" }}>
+            <div style={{ background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: 6, padding: "12px 14px", marginBottom: 16, fontSize: 13, color: "var(--danger)" }}>
               Low confidence. Please verify all fields before saving.
             </div>
           )}
@@ -511,13 +511,13 @@ export default function AdminScanPage() {
           </div>
 
           {result.detectedText.length > 0 && (
-            <div style={{ marginTop: 16, background: "#F6F6F6", borderRadius: 6, padding: "10px 14px" }}>
+            <div style={{ marginTop: 16, background: "var(--canvas)", borderRadius: 6, padding: "10px 14px" }}>
               <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "#65777a", textTransform: "uppercase", letterSpacing: ".08em" }}>Detected text</p>
               <p style={{ margin: 0, fontSize: 12, color: "#65777a", lineHeight: 1.7 }}>{result.detectedText.join(" · ")}</p>
             </div>
           )}
 
-          <div style={{ marginTop: 16, background: "#f0faf5", borderRadius: 6, padding: "10px 14px", fontSize: 12, color: "#2C645B" }}>
+          <div style={{ marginTop: 16, background: "var(--brand-soft)", borderRadius: 6, padding: "10px 14px", fontSize: 12, color: "var(--brand)" }}>
             <strong>AI reasoning:</strong> {result.reasoningShort}
           </div>
 

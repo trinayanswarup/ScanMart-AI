@@ -83,17 +83,17 @@ export default function AdminProductDetailPage() {
               
               <div style={{ display: "grid", gap: 24 }}>
                 <div style={{ position: "relative" }}>
-                  <label style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Product Title</label>
+                  <label style={{ position: "absolute", top: -8, left: 10, background: "var(--surface)", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Product Title</label>
                   <input className="input" style={{ paddingTop: 14, paddingBottom: 14 }} value={listingForm.title} onChange={(e) => setListingForm({ ...listingForm, title: e.target.value })} />
                 </div>
                 
                 <div style={{ position: "relative" }}>
-                  <label style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Price (€)</label>
+                  <label style={{ position: "absolute", top: -8, left: 10, background: "var(--surface)", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Price (€)</label>
                   <input className="input" type="number" min="0" step="0.01" style={{ paddingTop: 14, paddingBottom: 14 }} value={listingForm.price} onChange={(e) => setListingForm({ ...listingForm, price: e.target.value })} />
                 </div>
                 
                 <div style={{ position: "relative" }}>
-                  <label style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Description</label>
+                  <label style={{ position: "absolute", top: -8, left: 10, background: "var(--surface)", padding: "0 6px", fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Description</label>
                   <textarea className="input" style={{ minHeight: 120, paddingTop: 14 }} value={listingForm.description} onChange={(e) => setListingForm({ ...listingForm, description: e.target.value })} />
                 </div>
               </div>
@@ -129,7 +129,7 @@ export default function AdminProductDetailPage() {
 
             {/* AI Source subtle badge */}
             {item.source === "ai_scan" && (
-              <section className="card shadow-soft" style={{ padding: 20, background: "#F0FAF5", border: "1px solid #C6E6D6", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <section className="card shadow-soft" style={{ padding: 20, background: "var(--brand-soft)", border: "1px solid var(--brand)", display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <Bot size={18} color="var(--brand)" style={{ marginTop: 2 }} />
                 <div>
                   <strong style={{ fontSize: 13, color: "var(--brand)", display: "block", marginBottom: 4 }}>AI-Assisted Scan</strong>
@@ -141,7 +141,7 @@ export default function AdminProductDetailPage() {
             )}
             
             {correction && (
-              <section className="card shadow-soft" style={{ padding: 20, background: "#FFFBEB", border: "1px solid var(--amber)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <section className="card shadow-soft" style={{ padding: 20, background: "var(--brand-soft)", border: "1px solid var(--amber)", display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <div>
                   <strong style={{ fontSize: 13, color: "#92400E", display: "block", marginBottom: 4 }}>Human Corrected</strong>
                   <p style={{ margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>

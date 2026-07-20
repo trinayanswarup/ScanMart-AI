@@ -31,7 +31,7 @@ function NodeTrace({ node, last, devMode }: { node: WorkflowNodeExecution; last:
       <div style={{ position: "absolute", left: 0, top: 0, width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "50%", 
                     color: node.status === "success" ? "white" : node.status === "failed" ? "white" : "var(--amber)", 
                     background: node.status === "success" ? "var(--brand)" : node.status === "failed" ? "var(--danger)" : "#FEF3C7", 
-                    border: "2px solid white", boxShadow: "0 0 0 1px var(--line)", zIndex: 2 }}>
+                    border: "2px solid var(--surface)", boxShadow: "0 0 0 1px var(--line)", zIndex: 2 }}>
         <Icon size={14} strokeWidth={3} />
       </div>
       
@@ -120,7 +120,7 @@ export default function AdminAutomationDetailPage() {
           {selected ? (
             <>
               {selected.status === "waiting_for_human" && (
-                <div style={{ background: "#F0FAF5", border: "1px solid #7CD4AC", borderRadius: 8, padding: 24, marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+                <div style={{ background: "var(--brand-soft)", border: "1px solid var(--brand)", borderRadius: 8, padding: 24, marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
                   <div>
                     <strong style={{ fontSize: 16, color: "var(--brand)", display: "block", marginBottom: 6 }}>Action required</strong>
                     <p style={{ margin: 0, color: "var(--ink)", fontSize: 14, lineHeight: 1.5 }}>Review the draft listing, then approve it to publish the product.</p>
@@ -158,9 +158,9 @@ export default function AdminAutomationDetailPage() {
         {/* History Sidebar */}
         <aside style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {devMode && (
-            <section className="card shadow-soft animate-fade-in" style={{ padding: 24, border: "1px solid var(--amber)", background: "#FFFBEB" }}>
-              <h3 style={{ fontSize: 14, fontWeight: 800, color: "#92400E", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 }}>System Details</h3>
-              <div style={{ display: "grid", gap: 12, fontSize: 13, color: "#92400E" }}>
+            <section className="card shadow-soft animate-fade-in" style={{ padding: 24, border: "1px solid var(--amber)", background: "var(--brand-soft)" }}>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 }}>System Details</h3>
+              <div style={{ display: "grid", gap: 12, fontSize: 13, color: "var(--ink)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Trigger:</strong> <span>{workflow.triggerType}</span></div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Nodes:</strong> <span>{workflow.nodeNames.length} defined</span></div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}><strong>ID:</strong> <span>{workflow.id.slice(0, 8)}...</span></div>
@@ -173,9 +173,9 @@ export default function AdminAutomationDetailPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {executions.length ? executions.map((execution) => (
                 <button key={execution.id} onClick={() => setSelectedId(execution.id)} 
-                        style={{ padding: "12px 16px", textAlign: "left", borderRadius: 8, border: "1px solid", 
-                                 borderColor: selected?.id === execution.id ? "var(--brand)" : "var(--line)", 
-                                 background: selected?.id === execution.id ? "#F0FAF5" : "white", cursor: "pointer", transition: "all .2s" }}>
+                        style={{ padding: "12px 16px", textAlign: "left", borderRadius: 8, border: "1px solid",
+                                 borderColor: selected?.id === execution.id ? "var(--brand)" : "var(--line)",
+                                 background: selected?.id === execution.id ? "var(--brand-soft)" : "var(--surface)", cursor: "pointer", transition: "all .2s" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                     <strong style={{ fontSize: 13, color: selected?.id === execution.id ? "var(--brand)" : "var(--ink)" }}>
                       {new Date(execution.startedAt).toLocaleDateString()}

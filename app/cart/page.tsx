@@ -55,7 +55,7 @@ export default function CartPage() {
                   <strong style={{ fontSize: 16, color: "var(--ink)" }}>{item.productName}</strong>
                   <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 4 }}>€{item.price} each · {item.storeName}</span>
                   <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 12 }}>
-                    <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden", background: "white" }}>
+                    <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden", background: "var(--surface)" }}>
                       <button style={{ border: 0, background: "transparent", width: 32, height: 32, display: "grid", placeItems: "center", color: "var(--muted)" }} onClick={() => setCartQuantity(item.listingId, item.quantity - 1)}><Minus size={14} /></button>
                       <b style={{ width: 32, height: 32, display: "grid", placeItems: "center", fontSize: 13, background: "var(--brand-soft)", color: "var(--ink)" }}>{item.quantity}</b>
                       <button style={{ border: 0, background: "transparent", width: 32, height: 32, display: "grid", placeItems: "center", color: "var(--muted)" }} onClick={() => setCartQuantity(item.listingId, item.quantity + 1)}><Plus size={14} /></button>
@@ -74,15 +74,15 @@ export default function CartPage() {
             <h2 className="section-title" style={{ marginBottom: 24 }}>Pickup Details</h2>
             <div style={{ display: "grid", gap: 20 }}>
               <div style={{ position: "relative" }}>
-                <label className="label" style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--brand)" }}>Full Name</label>
+                <label className="label" style={{ position: "absolute", top: -8, left: 10, background: "var(--surface)", padding: "0 6px", fontSize: 11, color: "var(--brand)" }}>Full Name</label>
                 <input className="input" style={{ paddingTop: 14, paddingBottom: 14 }} placeholder="John Doe" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} />
               </div>
               <div style={{ position: "relative" }}>
-                <label className="label" style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--brand)" }}>Phone Number</label>
+                <label className="label" style={{ position: "absolute", top: -8, left: 10, background: "var(--surface)", padding: "0 6px", fontSize: 11, color: "var(--brand)" }}>Phone Number</label>
                 <input className="input" style={{ paddingTop: 14, paddingBottom: 14 }} placeholder="+91 99999 99999" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} />
               </div>
               <div style={{ position: "relative" }}>
-                <label className="label" style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 6px", fontSize: 11, color: "var(--brand)" }}>Email (Optional)</label>
+                <label className="label" style={{ position: "absolute", top: -8, left: 10, background: "var(--surface)", padding: "0 6px", fontSize: 11, color: "var(--brand)" }}>Email (Optional)</label>
                 <input className="input" style={{ paddingTop: 14, paddingBottom: 14 }} type="email" placeholder="john@example.com" value={form.customerEmail} onChange={(e) => setForm({ ...form, customerEmail: e.target.value })} />
               </div>
             </div>

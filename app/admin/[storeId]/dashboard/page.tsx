@@ -1,8 +1,8 @@
-﻿﻿"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowUpRight, Box, CheckCircle2, ChevronRight, CircleAlert, Clock, Euro, MoreVertical, ScanLine, ShoppingBag, TrendingUp, Users, Activity } from "lucide-react";
+import { ArrowUpRight, Box, CheckCircle2, ChevronRight, CircleAlert, Clock, Euro, MoreVertical, PackagePlus, ScanLine, ShoppingBag, TrendingUp, Users, Activity } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 
 export default function AdminDashboardPage() {
@@ -23,7 +23,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="animate-fade-in" style={{ padding: "32px", display: "flex", flexDirection: "column", gap: 24 }}>
       
-      {/* â”€â”€â”€ TOP METRICS (3 Columns) â”€â”€â”€ */}
+      {/* â"€â"€â"€ TOP METRICS (3 Columns) â"€â"€â"€ */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
         
         <div className="card shadow-soft" style={{ padding: 24, display: "flex", flexDirection: "column" }}>
@@ -73,53 +73,65 @@ export default function AdminDashboardPage() {
 
       </div>
 
-      {/* â”€â”€â”€ MIDDLE SECTION â”€â”€â”€ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 24 }}>
-        
-        {/* Recent Activity Widget */}
+      {/* MIDDLE SECTION */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
+
+        {/* Recent Activity - compact */}
         <div className="card shadow-soft" style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--line)" }}>
-            <div>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Recent Activity</h2>
-              <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>Needs your attention</span>
-            </div>
-            <div className="animate-pulse-ring" style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--mint)", marginTop: 6 }} />
+          <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Recent Activity</h2>
+            <div className="animate-pulse-ring" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--mint)" }} />
           </div>
-          
-          <div style={{ padding: 24, flex: 1, display: "flex", flexDirection: "column" }}>
-            {latest ? <>
-              {latest.status === "waiting_for_human" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", justifyContent: "center" }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "#FEF3C7", color: "var(--amber)", display: "grid", placeItems: "center", marginBottom: 8 }}>
-                    <ScanLine size={24} />
+          <div style={{ padding: "16px 20px" }}>
+            {latest ? (
+              latest.status === "waiting_for_human" ? (
+                <Link href={`/admin/${storeId}/automations/${latest.workflowId}`} style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(245, 158, 11, 0.12)", color: "var(--amber)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                    <ScanLine size={16} />
                   </div>
-                  <h3 style={{ fontSize: 18, margin: "0", color: "var(--ink)", fontWeight: 800 }}>New product scanned</h3>
-                  <p style={{ color: "var(--muted)", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
-                    AI has drafted a new storefront listing. It needs your approval before it goes live.
-                  </p>
-                  <div style={{ marginTop: "auto", paddingTop: 24 }}>
-                    <Link href={`/admin/${storeId}/automations/${latest.workflowId}`} className="btn btn-primary shadow-glow" style={{ width: "100%", justifyContent: "center" }}>
-                      <CheckCircle2 size={16} /> Review & Approve
-                    </Link>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Approval needed</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>New scan draft awaiting review</div>
                   </div>
-                </div>
+                  <ChevronRight size={16} color="var(--muted)" />
+                </Link>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "var(--brand-soft)", color: "var(--brand)", display: "grid", placeItems: "center", marginBottom: 8 }}>
-                    <CheckCircle2 size={24} />
+                <Link href={`/admin/${storeId}/automations`} style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--brand-soft)", color: "var(--brand)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                    <CheckCircle2 size={16} />
                   </div>
-                  <h3 style={{ fontSize: 16, margin: "0", color: "var(--ink)", fontWeight: 700 }}>You're all caught up!</h3>
-                  <p style={{ color: "var(--muted)", fontSize: 13, margin: 0 }}>
-                    Last activity: {state.workflows.find((wf) => wf.id === latest.workflowId)?.name} completed successfully.
-                  </p>
-                  <div style={{ marginTop: "auto", paddingTop: 24, width: "100%" }}>
-                    <Link href={`/admin/${storeId}/automations`} className="btn btn-secondary shadow-soft" style={{ width: "100%", justifyContent: "center" }}>
-                      View all activity
-                    </Link>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>All caught up</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{state.workflows.find((wf) => wf.id === latest.workflowId)?.name}</div>
                   </div>
+                  <ChevronRight size={16} color="var(--muted)" />
+                </Link>
+              )
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--canvas)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <Activity size={16} color="var(--muted)" />
                 </div>
-              )}
-            </> : <div className="empty" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}><Activity size={40} color="var(--brand)" style={{ opacity: 0.2, margin: "0 auto 16px" }} /><p style={{ fontSize: 16, color: "var(--ink)", fontWeight: 600 }}>No recent activity.</p></div>}
+                <div style={{ fontSize: 13, color: "var(--muted)" }}>No activity yet</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Add to Inventory - new action card */}
+        <div className="card shadow-soft" style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Add to Inventory</h2>
+            <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>Stock your shelves fast</span>
+          </div>
+          <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 4px", lineHeight: 1.5 }}>AI reads your product photo or barcode in seconds.</p>
+            <Link href={`/admin/${storeId}/scan`} className="btn btn-primary" style={{ justifyContent: "center", fontSize: 13 }}>
+              <ScanLine size={15} /> Scan with AI
+            </Link>
+            <Link href={`/admin/${storeId}/inventory/new`} className="btn btn-secondary" style={{ justifyContent: "center", fontSize: 13 }}>
+              <PackagePlus size={15} /> Add manually
+            </Link>
           </div>
         </div>
 
@@ -158,7 +170,7 @@ export default function AdminDashboardPage() {
 
       </div>
 
-      {/* â”€â”€â”€ BOTTOM SECTION â”€â”€â”€ */}
+      {/* â"€â"€â"€ BOTTOM SECTION â"€â"€â"€ */}
       <div className="card shadow-soft" style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)", margin: 0 }}>Recent Orders</h2>
