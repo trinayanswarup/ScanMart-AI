@@ -30,7 +30,7 @@ function NodeTrace({ node, last, devMode }: { node: WorkflowNodeExecution; last:
       
       <div style={{ position: "absolute", left: 0, top: 0, width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "50%", 
                     color: node.status === "success" ? "white" : node.status === "failed" ? "white" : "var(--amber)", 
-                    background: node.status === "success" ? "var(--brand)" : node.status === "failed" ? "var(--danger)" : "#FEF3C7", 
+                    background: node.status === "success" ? "var(--brand)" : node.status === "failed" ? "var(--danger)" : "rgba(245, 158, 11, 0.15)",
                     border: "2px solid var(--surface)", boxShadow: "0 0 0 1px var(--line)", zIndex: 2 }}>
         <Icon size={14} strokeWidth={3} />
       </div>
@@ -135,7 +135,7 @@ export default function AdminAutomationDetailPage() {
               )}
               
               {actionMessage && (
-                <div style={{ background: actionMessage.includes("approved") ? "#F0FAF5" : "#FEF2F2", color: actionMessage.includes("approved") ? "var(--brand)" : "var(--danger)", padding: 16, borderRadius: 8, marginBottom: 32, fontSize: 14, fontWeight: 600 }}>
+                <div style={{ background: actionMessage.includes("approved") ? "var(--brand-soft)" : "rgba(239, 68, 68, 0.1)", color: actionMessage.includes("approved") ? "var(--brand)" : "var(--danger)", padding: 16, borderRadius: 8, marginBottom: 32, fontSize: 14, fontWeight: 600 }}>
                   {actionMessage}
                 </div>
               )}

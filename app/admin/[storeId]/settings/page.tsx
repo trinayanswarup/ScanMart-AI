@@ -24,7 +24,7 @@ export default function AdminSettingsPage() {
         <h2 className="section-title">Store profile</h2>
         <div className="form-grid" style={{ marginTop: 20 }}>
           <div><label className="label">Store name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div><label className="label">Business type</label><input className="input" value={store?.businessType ?? ""} disabled style={{ textTransform: "capitalize", background: "#f5f7f5" }} /></div>
+          <div><label className="label">Business type</label><input className="input" value={store?.businessType ?? ""} disabled style={{ textTransform: "capitalize", background: "var(--canvas)" }} /></div>
           <div><label className="label">Storefront slug</label><input className="input" value={slug} onChange={(e) => setSlug(e.target.value)} /></div>
           <div><label className="label">Default low-stock threshold</label><input className="input" type="number" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} /></div>
         </div>
@@ -45,9 +45,9 @@ export default function AdminSettingsPage() {
               key={s.id}
               onClick={() => router.push(`/admin/${s.id}/dashboard`)}
               style={{
-                border: s.id === storeId ? "2px solid #2C645B" : "1px solid #e1e9e9",
+                border: s.id === storeId ? "2px solid var(--brand)" : "1px solid var(--line)",
                 borderRadius: 8, padding: "16px 14px",
-                background: s.id === storeId ? "#F0FAF5" : "white",
+                background: s.id === storeId ? "var(--brand-soft)" : "var(--surface)",
                 cursor: "pointer", textAlign: "left", transition: ".15s",
               }}
             >
@@ -58,7 +58,7 @@ export default function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="card" style={{ padding: 26, marginTop: 20, borderColor: "#f0d8d5" }}>
+      <section className="card" style={{ padding: 26, marginTop: 20, borderColor: "rgba(239, 68, 68, 0.3)" }}>
         <h2 className="section-title">Reset workspace</h2>
         <p className="muted" style={{ fontSize: 13, lineHeight: 1.6 }}>Reset all stores to their original state.</p>
         <button className="btn btn-danger" onClick={() => { if (confirm("Reset all changes?")) { resetDemo(); location.reload(); } }}>

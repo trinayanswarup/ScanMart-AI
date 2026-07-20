@@ -283,8 +283,8 @@ export default function AdminScanPage() {
             onClick={() => { setMode(m); setResult(null); setError(""); }}
             style={{
               display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 6, border: "none",
-              background: mode === m ? "white" : "transparent",
-              color: mode === m ? "#092922" : "#65777a",
+              background: mode === m ? "var(--surface)" : "transparent",
+              color: mode === m ? "var(--ink)" : "var(--muted)",
               fontWeight: mode === m ? 700 : 500,
               fontSize: 14,
               boxShadow: mode === m ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
@@ -307,9 +307,9 @@ export default function AdminScanPage() {
                 onDragOver={(e) => e.preventDefault()}
                 onClick={() => !file && inputRef.current?.click()}
                 style={{
-                  border: `2px dashed ${file ? "#73AB95" : "#d9e0db"}`,
+                  border: `2px dashed ${file ? "var(--sage)" : "var(--line)"}`,
                   borderRadius: 8, padding: 32, textAlign: "center",
-                  background: file ? "#f0faf5" : "#fbfcfb",
+                  background: file ? "var(--brand-soft)" : "var(--canvas)",
                   cursor: file ? "default" : "pointer", transition: ".18s",
                   position: "relative",
                 }}
@@ -403,7 +403,7 @@ export default function AdminScanPage() {
             </p>
           </div>
 
-          <div style={{ borderTop: "1px solid #e1e9e9", paddingTop: 20 }}>
+          <div style={{ borderTop: "1px solid var(--line)", paddingTop: 20 }}>
             <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Or upload an image with a barcode</p>
             <div
               onDrop={drop}

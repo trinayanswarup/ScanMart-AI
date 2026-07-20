@@ -16,6 +16,7 @@
   --slate: #94A3B8;
   --amber: #F59E0B;
   --danger: #EF4444;
+  --ghost-num: rgba(44, 100, 91, 0.12);
 }
 
 .dark {
@@ -34,6 +35,7 @@
   --slate: #94A3B8;
   --amber: #F59E0B;
   --danger: #F87171;
+  --ghost-num: rgba(124, 212, 172, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -79,10 +81,14 @@ button { cursor: pointer; }
 .textarea { min-height: 104px; resize: vertical; }
 .label { display: block; font-size: 13px; font-weight: 600; font-family: "Inter Variable", sans-serif; margin-bottom: 7px; color: var(--ink); }
 .badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 4px; padding: 5px 9px; font-size: 12px; font-weight: 700; white-space: nowrap; font-family: "Inter Variable", sans-serif; }
-.badge-green { background: #E0F2E9; color: var(--brand); }
-.badge-amber { background: #FEF3C7; color: #B45309; }
-.badge-red { background: #FEE2E2; color: #B91C1C; }
-.badge-gray { background: #F4F7F5; color: var(--muted); border: 1px solid #E2EAE5; }
+.badge-green { background: #E0F2E9; color: #1A5944; border: 1px solid #A8D8BE; }
+.badge-amber { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+.badge-red { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+.badge-gray { background: #F1F5F2; color: #4B5563; border: 1px solid #D1D9D4; }
+.dark .badge-green { background: rgba(124, 212, 172, 0.12); color: #7CD4AC; border: 1px solid rgba(124, 212, 172, 0.25); }
+.dark .badge-amber { background: rgba(251, 191, 36, 0.12); color: #FBBF24; border: 1px solid rgba(251, 191, 36, 0.25); }
+.dark .badge-red { background: rgba(248, 113, 113, 0.12); color: #F87171; border: 1px solid rgba(248, 113, 113, 0.25); }
+.dark .badge-gray { background: rgba(156, 163, 175, 0.1); color: #9CA3AF; border: 1px solid rgba(156, 163, 175, 0.2); }
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
@@ -104,6 +110,7 @@ button { cursor: pointer; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .error-text { color: var(--danger); font-size: 12px; margin-top: 6px; }
 .notice { padding: 13px 15px; border-radius: 6px; font-size: 13px; background: #F4F7F5; color: var(--brand); border: 1px solid var(--sage); }
+.dark .notice { background: rgba(124, 212, 172, 0.08); border-color: rgba(124, 212, 172, 0.22); }
 
 /* Utilities */
 .glass {

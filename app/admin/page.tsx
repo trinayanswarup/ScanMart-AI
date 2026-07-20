@@ -13,7 +13,7 @@ export default function AdminHome() {
     <div className="page-wrap" style={{ maxWidth: 900 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <ShieldCheck size={16} color="#2C645B" />
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#2C645B" }}>Signed in as {state.company.name} Admin</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--brand)" }}>Signed in as ScanMart Group Admin</span>
       </div>
       <h1 style={{ fontSize: 30, letterSpacing: "-.04em", margin: "0 0 8px" }}>Choose a store to manage</h1>
       <p className="muted" style={{ marginBottom: 32 }}>Each store has its own inventory, automations, and public storefront.</p>
@@ -28,8 +28,8 @@ export default function AdminHome() {
               <div style={{ fontWeight: 700, fontSize: 16 }}>{store.name}</div>
               <div className="muted" style={{ fontSize: 12, marginTop: 4, textTransform: "capitalize" }}>{store.businessType}</div>
               <div style={{ display: "flex", gap: 14, marginTop: 14 }}>
-                <span style={{ fontSize: 12, color: "#65777a" }}>{itemCount} products</span>
-                <span style={{ fontSize: 12, color: "#65777a" }}>{orderCount} orders</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>{itemCount} products</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>{orderCount} orders</span>
               </div>
             </Link>
           );

@@ -52,7 +52,7 @@ export default function AdminStoreLayout({ children }: { children: React.ReactNo
         {/* Brand Area */}
         <div style={{ padding: "0 24px", marginBottom: 32 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 4 }}>
-            {state.company.name}
+            ScanMart Group
           </div>
           <div style={{ fontWeight: 800, fontSize: 20, color: "var(--ink)" }}>
             {store?.name ?? "Store"}

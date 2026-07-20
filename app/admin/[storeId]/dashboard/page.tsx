@@ -51,7 +51,7 @@ export default function AdminDashboardPage() {
               <div style={{ fontSize: 28, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.03em" }}>{active.length}</div>
             </div>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: low.length ? "#D97706" : "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: low.length ? "var(--accent)" : "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
             {low.length ? <><CircleAlert size={14} /> {low.length} items low on stock</> : "All stock levels healthy"}
           </div>
         </div>
@@ -202,11 +202,11 @@ export default function AdminDashboardPage() {
                   </td>
                   <td style={{ padding: "16px 24px" }}>
                     {order.status === "new" ? (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20, background: "rgba(245, 158, 11, 0.1)", color: "#D97706", fontSize: 12, fontWeight: 700 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20, background: "rgba(245, 158, 11, 0.1)", color: "var(--accent)", fontSize: 12, fontWeight: 700 }}>
                         <Clock size={12} /> Pending
                       </span>
                     ) : (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20, background: "rgba(16, 185, 129, 0.1)", color: "#059669", fontSize: 12, fontWeight: 700 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 20, background: "rgba(16, 185, 129, 0.1)", color: "var(--brand)", fontSize: 12, fontWeight: 700 }}>
                         <CheckCircle2 size={12} /> Complete
                       </span>
                     )}
