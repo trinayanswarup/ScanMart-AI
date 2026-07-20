@@ -74,7 +74,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         corrections: original && corrected && JSON.stringify(original) !== JSON.stringify(corrected)
           ? [{ id: makeId("correction"), inventoryItemId: id, original, corrected, createdAt: new Date().toISOString() }, ...current.corrections]
           : current.corrections,
-        executions: workflow ? [{
+        executions: (workflow && item.source === "ai_scan") ? [{
           id: executionId,
           workflowId: workflow.id,
           status: "waiting_for_human",
@@ -230,33 +230,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateOrderStatus = useCallback((id: string, status: Order["status"]) => {
-    let response = { ok: true } as { ok: boolean; message?: string };
+    // Validate synchronously against current state so the return value is reliable.
+    // setState updaters run after this function returns, making in-updater assignments unreadable by the caller.
+    const order = state.orders.find((entry) => entry.id === id);
+    if (!order) return { ok: false, message: "Order not found." } as { ok: boolean; message?: string };
+    if (status === "accepted" && !order.stockReduced) {
+      const unavailable = order.items.find((orderItem) => (state.inventory.find((item) => item.id === orderItem.inventoryItemId)?.quantity ?? 0) < orderItem.quantity);
+      if (unavailable) return { ok: false, message: `${unavailable.name} does not have enough stock.` };
+    }
     setState((current) => {
-      const order = current.orders.find((entry) => entry.id === id);
-      if (!order) { response = { ok: false, message: "Order not found." }; return current; }
-      if (status !== "accepted" || order.stockReduced) {
+      const o = current.orders.find((entry) => entry.id === id);
+      if (!o) return current;
+      if (status !== "accepted" || o.stockReduced) {
         return { ...current, orders: current.orders.map((entry) => entry.id === id ? { ...entry, status } : entry) };
       }
-      const unavailable = order.items.find((orderItem) => (current.inventory.find((item) => item.id === orderItem.inventoryItemId)?.quantity ?? 0) < orderItem.quantity);
-      if (unavailable) { response = { ok: false, message: `${unavailable.name} does not have enough stock.` }; return current; }
+      // Re-validate inside updater to guard against any TOCTOU race
+      const cantFulfill = o.items.find((orderItem) => (current.inventory.find((item) => item.id === orderItem.inventoryItemId)?.quantity ?? 0) < orderItem.quantity);
+      if (cantFulfill) return current;
       const inventory = current.inventory.map((item) => {
-        const ordered = order.items.find((entry) => entry.inventoryItemId === item.id);
+        const ordered = o.items.find((entry) => entry.inventoryItemId === item.id);
         return ordered ? { ...item, quantity: item.quantity - ordered.quantity } : item;
       });
-      const lowStock = inventory.filter((item) => order.items.some((entry) => entry.inventoryItemId === item.id) && item.quantity <= item.lowStockThreshold);
-      const workflow = current.workflows.find((entry) => entry.triggerType === "ORDER_ACCEPTED" && entry.businessId === order.businessId);
+      const lowStock = inventory.filter((item) => o.items.some((entry) => entry.inventoryItemId === item.id) && item.quantity <= item.lowStockThreshold);
+      const workflow = current.workflows.find((entry) => entry.triggerType === "ORDER_ACCEPTED" && entry.businessId === o.businessId);
       const execution = workflow ? {
         id: makeId("exec"), workflowId: workflow.id, status: "success" as const, trigger: "ORDER_ACCEPTED", startedAt: new Date().toISOString(),
         nodes: [
-          { id: makeId("node"), nodeName: "Stock reduced", nodeType: "REDUCE_STOCK", status: "success" as const, input: { orderId: id }, output: { itemsUpdated: order.items.length }, timestamp: new Date().toISOString() },
+          { id: makeId("node"), nodeName: "Stock reduced", nodeType: "REDUCE_STOCK", status: "success" as const, input: { orderId: id }, output: { itemsUpdated: o.items.length }, timestamp: new Date().toISOString() },
           { id: makeId("node"), nodeName: "Low stock checked", nodeType: "CHECK_LOW_STOCK", status: "success" as const, input: { orderId: id }, output: { lowStockItems: lowStock.map((item) => item.name) }, timestamp: new Date().toISOString() },
           { id: makeId("node"), nodeName: "Seller notified", nodeType: "SEND_IN_APP_NOTIFICATION", status: "success" as const, input: { orderId: id }, output: { message: lowStock.length ? `${lowStock.length} item(s) need attention` : "Stock levels look healthy" }, timestamp: new Date().toISOString() },
         ],
       } : null;
       return { ...current, inventory, orders: current.orders.map((entry) => entry.id === id ? { ...entry, status, stockReduced: true } : entry), executions: execution ? [execution, ...current.executions] : current.executions };
     });
-    return response;
-  }, []);
+    return { ok: true } as { ok: boolean; message?: string };
+  }, [state]);
 
   const approveWorkflowExecution = useCallback((executionId: string) => {
     let result = { ok: true, message: "Listing approved, published, and workflow completed." };

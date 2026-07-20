@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       suggestedPrice: parsed.suggestedPrice ?? undefined,
       confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.5,
       detectedText: Array.isArray(parsed.detectedText) ? parsed.detectedText : [],
-      reasoningShort: parsed.reasoningShort ?? "",
+      reasoningShort: (typeof parsed.reasoningShort === "string" && parsed.reasoningShort.trim()) || "Extracted from product image.",
     });
 
     return NextResponse.json(validated);
