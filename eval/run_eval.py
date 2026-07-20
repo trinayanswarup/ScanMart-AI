@@ -4,13 +4,15 @@ ScanMart AI evaluation script.
 
 Calls the same NVIDIA NIM endpoint used in app/api/extract/route.ts for each
 image in dataset/images/, compares results to dataset/ground_truth.json, and
-saves a markdown report to report.md.
+saves a markdown report plus raw JSON results.
 
 Usage:
     pip install -r requirements.txt
-    python run_eval.py
+    python run_eval.py               # raw images
+    python run_eval.py --preprocess  # apply contrast/sharpen before API call
 """
 
+import argparse
 import base64
 import json
 import os
@@ -28,7 +30,6 @@ from rapidfuzz import fuzz
 SCRIPT_DIR = Path(__file__).parent
 IMAGES_DIR = SCRIPT_DIR / "dataset" / "images"
 GROUND_TRUTH_FILE = SCRIPT_DIR / "dataset" / "ground_truth.json"
-REPORT_FILE = SCRIPT_DIR / "report.md"
 ENV_FILE = SCRIPT_DIR.parent / ".env.local"
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -94,18 +95,9 @@ Return JSON only:\
 
 # ── API ───────────────────────────────────────────────────────────────────────
 
-def call_nvidia(image_path: Path, api_key: str) -> dict:
-    """Send an image to NVIDIA NIM and return the parsed extraction dict."""
-    raw_bytes = image_path.read_bytes()
+def call_nvidia(raw_bytes: bytes, mime: str, api_key: str) -> dict:
+    """Send raw image bytes to NVIDIA NIM and return the parsed extraction dict."""
     b64 = base64.b64encode(raw_bytes).decode()
-
-    ext = image_path.suffix.lower()
-    if ext in (".jpg", ".jpeg"):
-        mime = "image/jpeg"
-    elif ext == ".png":
-        mime = "image/png"
-    else:
-        mime = "image/webp"
 
     payload = {
         "model": MODEL,
@@ -168,7 +160,6 @@ def check_category(ai_cat: str, gt_cat: str) -> bool:
         return True
     if ai in CATEGORY_SYNONYMS and gt in CATEGORY_SYNONYMS[ai]:
         return True
-    # Substring fallback — catches minor phrasing differences
     if gt in ai or ai in gt:
         return True
     return False
@@ -177,6 +168,24 @@ def check_category(ai_cat: str, gt_cat: str) -> bool:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="ScanMart AI evaluation harness.")
+    parser.add_argument(
+        "--preprocess",
+        action="store_true",
+        help="Apply image preprocessing (auto-orient, contrast ×1.3, brightness ×1.1, sharpen) before API call.",
+    )
+    args = parser.parse_args()
+
+    suffix = "_preprocessed" if args.preprocess else ""
+    report_file = SCRIPT_DIR / f"report{suffix}.md"
+    results_file = SCRIPT_DIR / f"results{suffix}.json"
+
+    preprocess_fn = None
+    if args.preprocess:
+        from preprocessing import preprocess_image_bytes
+        preprocess_fn = preprocess_image_bytes
+        print("Preprocessing: ON  (EXIF orient → contrast ×1.3 → brightness ×1.1 → sharpen)\n")
+
     load_dotenv(ENV_FILE)
     api_key = os.getenv("NVIDIA_API_KEY")
     if not api_key:
@@ -207,8 +216,20 @@ def main() -> None:
 
         print(f"Processing {img_path.name}...", end=" ", flush=True)
 
+        raw_bytes = img_path.read_bytes()
+        ext = img_path.suffix.lower()
+        mime = (
+            "image/jpeg" if ext in (".jpg", ".jpeg")
+            else "image/png" if ext == ".png"
+            else "image/webp"
+        )
+
+        if preprocess_fn is not None:
+            raw_bytes = preprocess_fn(raw_bytes)
+            mime = "image/jpeg"
+
         try:
-            ai = call_nvidia(img_path, api_key)
+            ai = call_nvidia(raw_bytes, mime, api_key)
         except Exception as exc:
             print(f"✗ error  ({exc})")
             rows.append({
@@ -268,18 +289,29 @@ def main() -> None:
     n_cat  = sum(1 for r in rows if r["cat_ok"])
     n_all  = sum(1 for r in rows if r["name_ok"] and r["cat_ok"])
 
+    label = " (preprocessed)" if args.preprocess else ""
+    sep_len = max(0, 40 - len(label))
+
     print()
-    print("── Summary " + "─" * 40)
+    print(f"── Summary{label} " + "─" * sep_len)
     print(f"  Items evaluated  : {n}")
     print(f"  Overall match    : {n_all}/{n}  ({100 * n_all / n:.0f}%)")
     print(f"  Name accuracy    : {n_name}/{n}  ({100 * n_name / n:.0f}%)  [WRatio ≥ {NAME_THRESHOLD}%]")
     print(f"  Category accuracy: {n_cat}/{n}  ({100 * n_cat / n:.0f}%)  [exact / synonym / substring]")
     print(f"  Price            : excluded (labels rarely display price)")
 
+    # ── Save raw results ──────────────────────────────────────────────────────
+
+    results_file.write_text(
+        json.dumps(rows, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    print(f"\nResults saved → {results_file.relative_to(SCRIPT_DIR.parent)}")
+
     # ── Markdown report ───────────────────────────────────────────────────────
 
     report_lines = [
-        "# ScanMart AI Evaluation Report",
+        "# ScanMart AI Evaluation Report" + label,
         "",
         f"**Model:** `{MODEL}`",
         "",
@@ -288,6 +320,7 @@ def main() -> None:
         f"| Name match | rapidfuzz WRatio ≥ {NAME_THRESHOLD} |",
         f"| Category match | exact match, synonym, or substring |",
         f"| Price | excluded — labels rarely display price |",
+        f"| Preprocessing | {'enabled' if args.preprocess else 'disabled'} |",
         "",
         "## Summary",
         "",
@@ -322,8 +355,8 @@ def main() -> None:
             f"| {'✓' if r['cat_ok'] else '✗'} |"
         )
 
-    REPORT_FILE.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
-    print(f"\nReport saved → {REPORT_FILE.relative_to(SCRIPT_DIR.parent)}")
+    report_file.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
+    print(f"Report saved   → {report_file.relative_to(SCRIPT_DIR.parent)}")
 
 
 if __name__ == "__main__":
