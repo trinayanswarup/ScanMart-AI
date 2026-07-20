@@ -84,6 +84,7 @@ export default function AdminScanPage() {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const [mode, setMode] = useState<Mode>("photo");
   const [file, setFile] = useState<File | null>(null);
@@ -241,6 +242,7 @@ export default function AdminScanPage() {
     setUsedAI(ai);
     setLoading(false);
     setScanProgress("");
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const analyzeReceipt = async () => {
@@ -270,6 +272,7 @@ export default function AdminScanPage() {
         unitPrice: item.unitPrice,
         confidence: item.confidence,
       })));
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch {
       setError("Unexpected error. Please try again.");
     }
@@ -332,6 +335,7 @@ export default function AdminScanPage() {
   const resetScan = () => { setResult(null); setOriginal(null); setFile(null); setPreview(""); setError(""); };
 
   const switchMode = (m: Mode) => {
+    closeCamera();
     setMode(m);
     setResult(null); setError("");
     setFile(null); setPreview("");
@@ -534,42 +538,60 @@ export default function AdminScanPage() {
 
       {mode === "receipt" && (
         <div className="card" style={{ padding: 24 }}>
-          <div
-            onDrop={drop}
-            onDragOver={(e) => e.preventDefault()}
-            onClick={() => !file && inputRef.current?.click()}
-            style={{
-              border: `2px dashed ${file ? "var(--sage)" : "var(--line)"}`,
-              borderRadius: 8, padding: 32, textAlign: "center",
-              background: file ? "var(--brand-soft)" : "var(--canvas)",
-              cursor: file ? "default" : "pointer", transition: ".18s",
-              position: "relative",
-            }}
-          >
-            {file && preview ? (
-              <div>
-                <img src={preview} alt="Receipt preview" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 6, objectFit: "contain" }} />
-                <button
-                  onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(""); setReceiptRows([]); }}
-                  style={{ position: "absolute", top: 10, right: 10, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "50%", width: 28, height: 28, display: "grid", placeItems: "center", cursor: "pointer" }}
-                >
-                  <X size={14} />
+          {!camera ? (
+            <>
+              <div
+                onDrop={drop}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={() => !file && inputRef.current?.click()}
+                style={{
+                  border: `2px dashed ${file ? "var(--sage)" : "var(--line)"}`,
+                  borderRadius: 8, padding: 32, textAlign: "center",
+                  background: file ? "var(--brand-soft)" : "var(--canvas)",
+                  cursor: file ? "default" : "pointer", transition: ".18s",
+                  position: "relative",
+                }}
+              >
+                {file && preview ? (
+                  <div>
+                    <img src={preview} alt="Receipt preview" style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 6, objectFit: "contain" }} />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(""); setReceiptRows([]); }}
+                      style={{ position: "absolute", top: 10, right: 10, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "50%", width: 28, height: 28, display: "grid", placeItems: "center", cursor: "pointer" }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ width: 48, height: 48, borderRadius: 8, background: "var(--canvas)", display: "grid", placeItems: "center", margin: "0 auto 12px", color: "var(--brand)" }}>
+                      <FileText size={22} />
+                    </div>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>Drop your receipt or invoice here</p>
+                    <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>or click to browse · JPG, PNG, WEBP</p>
+                  </div>
+                )}
+              </div>
+              <input ref={inputRef} type="file" accept="image/*" onChange={onFile} style={{ display: "none" }} />
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => inputRef.current?.click()}>
+                  <FileImage size={15} /> Choose file
+                </button>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={openCamera}>
+                  <Camera size={15} /> Use camera
                 </button>
               </div>
-            ) : (
-              <div>
-                <div style={{ width: 48, height: 48, borderRadius: 8, background: "var(--canvas)", display: "grid", placeItems: "center", margin: "0 auto 12px", color: "var(--brand)" }}>
-                  <FileText size={22} />
-                </div>
-                <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>Drop your receipt or invoice here</p>
-                <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>or click to browse · JPG, PNG, WEBP</p>
+              {cameraError && <p style={{ color: "#F85458", fontSize: 13, marginTop: 10 }}>{cameraError}</p>}
+            </>
+          ) : (
+            <div style={{ position: "relative" }}>
+              <video ref={videoRef} style={{ width: "100%", borderRadius: 8, background: "#000" }} playsInline muted />
+              <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={capture}><Camera size={15} /> Capture</button>
+                <button className="btn btn-secondary" onClick={closeCamera}><X size={15} /> Cancel</button>
               </div>
-            )}
-          </div>
-          <input ref={inputRef} type="file" accept="image/*" onChange={onFile} style={{ display: "none" }} />
-          <button className="btn btn-secondary" style={{ marginTop: 14 }} onClick={() => inputRef.current?.click()}>
-            <FileImage size={15} /> Choose file
-          </button>
+            </div>
+          )}
 
           {error && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</p>}
           <button
@@ -587,7 +609,7 @@ export default function AdminScanPage() {
 
       {/* ─── Receipt results table ─── */}
       {mode === "receipt" && receiptRows.length > 0 && (
-        <div className="card" style={{ marginTop: 20, padding: 24 }}>
+        <div ref={resultRef} className="card" style={{ marginTop: 20, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
               <div className="eyebrow">Receipt scan</div>
@@ -707,7 +729,7 @@ export default function AdminScanPage() {
 
       {/* ─── Single-product result ─── */}
       {result && (
-        <div className="card" style={{ marginTop: 20, padding: 24 }}>
+        <div ref={resultRef} className="card" style={{ marginTop: 20, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
             <div>
               <div className="eyebrow">Extraction result</div>

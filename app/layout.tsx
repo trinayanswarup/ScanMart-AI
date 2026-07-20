@@ -4,6 +4,7 @@ import "@fontsource-variable/inter";
 import "./globals.css";
 import { AppProvider } from "@/components/app-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { RouterProgressBar } from "@/components/router-progress-bar";
 
 export const metadata: Metadata = {
   title: "ScanMart AI",
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body suppressHydrationWarning>
         <ThemeProvider>
           <AppProvider>
+            <RouterProgressBar />
             {children}
           </AppProvider>
         </ThemeProvider>

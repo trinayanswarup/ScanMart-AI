@@ -10,7 +10,7 @@ Return ONLY valid JSON (no markdown, no backticks, no explanation before or afte
 {
   "productName": "Clear product name, max 70 chars, title case",
   "brand": "Brand name or null",
-  "category": "Electronics | Haircare | Styling | Personal Care | Coffee | Dairy | Snacks | Beverages | Cleaning | Tools | Food | Other",
+  "category": "Pick ONE from: Electronics | Electrical | Haircare | Styling | Personal Care | Bath | Snacks | Beverages | Cleaning | Tools | Food | Medicine | Essentials | Other",
   "description": "1-2 sentence factual product description based on what you see",
   "suggestedUnit": "pcs | kg | g | ml | l | pack | box | bottle | can | bag",
   "suggestedQuantity": 1,
@@ -20,13 +20,19 @@ Return ONLY valid JSON (no markdown, no backticks, no explanation before or afte
   "reasoningShort": "One sentence explaining your confidence"
 }
 
+Category rule: Return exactly ONE category string from the list above. Never return multiple categories joined with | or any other delimiter — pick the single best match.
+
 Confidence guide:
 - 0.85–1.0: Product name, brand, and category all clearly visible and identifiable
 - 0.65–0.84: Product identified but some fields uncertain or partially obscured
 - 0.40–0.64: Partial identification, some guessing involved
 - Below 0.40: Cannot identify reliably, manual entry required
 
-Look carefully at the image even if partially obscured by fingers, angled, or has glare. Use brand logos, colors, can/bottle shape, and any visible text.`;
+Look carefully at the image even if partially obscured by fingers, angled, or has glare. Use brand logos, colors, can/bottle shape, and any visible text.
+
+Product packaging often shows the brand name in large bold text and the actual product type/variant in smaller text nearby — extract the full product identity (brand + product type), not just the brand name alone.
+
+If the image shows a repackaged, bulk, or generic product (e.g., loose grains, local shop packaging, house-brand items) where a store or seller name is printed prominently but there is no distinct manufacturer brand, identify the actual product/food type shown (e.g., "Red Kidney Beans", "Rava/Semolina") rather than the store name. A store or seller name printed on packaging is NOT the product name — do not extract it as one.`;
 
 const RECEIPT_PROMPT = `You are analyzing a supplier receipt or invoice image for a retail business.
 Extract every line item as a product entry. Return ONLY valid JSON:
@@ -87,9 +93,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Add a 25-second timeout so the UI doesn't hang forever if NVIDIA API stalls
+    // 55-second timeout — NVIDIA free tier can take 30+ seconds under load.
+    // Kept under Vercel Hobby's 60s route limit.
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 55000);
 
     const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
       method: "POST",
@@ -102,7 +109,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "meta/llama-3.2-11b-vision-instruct",
         messages: [{ role: "user", content: contentParts }],
-        max_tokens: mode === "receipt" ? 1024 : 512,
+        max_tokens: mode === "receipt" ? 1024 : 2048,
         temperature: 0.2,
       }),
     });
@@ -172,6 +179,10 @@ export async function POST(req: NextRequest) {
     console.error("[/api/extract]", err);
     if (err instanceof Error && err.name === "AbortError") {
       return NextResponse.json({ error: "AI service is currently busy. Please try again or enter details manually." }, { status: 504 });
+    }
+    // Network-level failure: DNS resolution failed, connection refused, etc.
+    if (err instanceof TypeError && err.message === "fetch failed") {
+      return NextResponse.json({ error: "Cannot reach AI service. Check your internet connection and try again." }, { status: 503 });
     }
     return NextResponse.json({ error: "Extraction failed" }, { status: 500 });
   }

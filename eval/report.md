@@ -1,0 +1,48 @@
+# ScanMart AI Evaluation Report
+
+**Model:** `meta/llama-3.2-11b-vision-instruct`
+
+| Setting | Value |
+|---------|-------|
+| Name match | rapidfuzz WRatio ≥ 70 |
+| Category match | exact match, synonym, or substring |
+| Price | excluded — labels rarely display price |
+
+## Summary
+
+| Metric | Score |
+|--------|-------|
+| Items evaluated | 22 |
+| **Overall accuracy** | **9/22 (41%)** |
+| Name accuracy | 14/22 (64%) |
+| Category accuracy | 11/22 (50%) |
+
+> **Price excluded from scoring.** Most physical product labels do not display
+> price, making this an unfair comparison for a vision-based extraction task.
+
+## Per-item Results
+
+| ID | GT Name | AI Name | Name Score | Name | GT Cat | AI Cat | Cat |
+|----|---------|---------|------------|------|--------|--------|-----|
+| 001 | Rice Murukku | RUBY Snacks RIGE MURUKKU | 86% | ✓ | Snacks | Snacks | ✓ |
+| 002 | Voltage Stabilizer | Premier Voltage Stabilizer | 95% | ✓ | Electrical | Electrical | ✓ |
+| 003 | Dove Serum Bar | Dove serum bar | 100% | ✓ | Bath | Haircare | ✗ |
+| 004 | Prime Hydration | Clear | 28% | ✗ | Drinks | Beverages | ✓ |
+| 005 | Red Beans | Jaisreeram Super Market | 50% | ✗ | Food | Snacks | ✗ |
+| 006 | Pergale Milk Chocolate | PERGALE Milk Hazelnut | 74% | ✓ | Snacks | Snacks | ✓ |
+| 007 | Samba Rava | Samba Wheat Brokens | 86% | ✓ | Food | Food | ✓ |
+| 008 | Samsung Galaxy M56 5G | Galaxy M56 5G | 90% | ✓ | Electronics | Electronics | ✓ |
+| 009 | Aqua Lens Cleaner | Aqualens Lens Cleaner | 90% | ✓ | Essentials | Cleaning | ✗ |
+| 010 | Fenlong-MR Roll on | *ERROR* | 0% | ✗ | Medicine | — | ✗ |
+| 011 | Sunflower Oil | Gold Winner | 48% | ✗ | Food | Food | ✓ |
+| 012 | Disodium Hydrogen Cough Syrup | Disodium Hydrogen Citrate Syrup | 84% | ✓ | Medicine | Medicine | ✓ |
+| 013 | Curry Puli | CURRY PULI | 100% | ✓ | Food | Food | ✓ |
+| 014 | Natura Air Freshner | Natura Air Freshener | 97% | ✓ | Essentials | Personal Care | ✗ |
+| 015 | Prana Cough Formula | Prana Cough Formula | 100% | ✓ | Medicine | Medicine | ✓ |
+| 016 | Skin Cream | VITAMIN E NUTRIENT CONCENTRATE | 49% | ✗ | Medicine | Haircare | ✗ |
+| 017 | Face Mist | green tea revitalizing face mist | 90% | ✓ | Essentials | Personal Care | ✗ |
+| 018 | Vicks VapoRub | VapoRub Classic | 68% | ✗ | Medicine | Personal Care | ✗ |
+| 019 | Eveready AA Batteries | EVEREADY AA1015 | 66% | ✗ | Electronics | Electrical | ✗ |
+| 020 | MAGATOUCH plus | *ERROR* | 0% | ✗ | Medicine | — | ✗ |
+| 021 | Styling Cream | Aloe Boost Styling Cream | 90% | ✓ | Essentials | Haircare | ✗ |
+| 022 | RedBull Energy Drink | Red Bull | 84% | ✓ | Drinks | Beverages | ✓ |
