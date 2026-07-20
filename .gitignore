@@ -5,3 +5,8 @@ node_modules
 *.log
 coverage
 *.tsbuildinfo
+
+# Internal development docs — sanitized public versions are in *-REPO.md
+AGENTS.md
+CLAUDE.md
+PRD.md

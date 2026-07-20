@@ -125,4 +125,10 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 ---
 
+## Development process
+
+This project was built using a structured AI-agent development workflow with Claude Code as the primary coding agent. See [AGENTS-REPO.md](./AGENTS-REPO.md) for the agent operating rules and guardrails, [CLAUDE-REPO.md](./CLAUDE-REPO.md) for the project context and conventions given to the agent, and [PRD-REPO.md](./PRD-REPO.md) for the full product requirements and acceptance criteria used throughout development.
+
+---
+
 Built by [Trinayan Swarup](https://github.com/trinayanswarup)
