@@ -5,22 +5,44 @@ AI-powered inventory management for multi-store retail groups - scan a label, ge
 ## Screenshots
 
 ![Landing Page](./docs/screenshots/landing.png)
+
+---
+
 ![Admin Dashboard](./docs/screenshots/admin-dashboard.png)
+
+---
+
 ![AI Scan Flow](./docs/screenshots/scan-flow.png)
+
+---
+
 ![Public Storefront](./docs/screenshots/storefront.png)
+
+---
+
 ![Adding from multiple stores](./docs/screenshots/cart-step1-add.png)
 _Browsing Corner Café, adding coffee beans — items from any store go into one shared cart._
+
+---
 
 ![Cart grouped by store](./docs/screenshots/cart-step2-grouped.png)
 _The cart automatically groups items by store._ three products, three stores, one checkout.\_
 
+---
+
 ![Cart grouped by store](./docs/screenshots/cart-step3-grouped.png)
 _three products, three stores, one checkout._
+
+---
 
 ![Checkout splits per store](./docs/screenshots/cart-step4-split.png)
 _Confirming the order creates a separate order per store — each seller only ever sees their own._
 
+---
+
 ![Order Confirmation](./docs/screenshots/order-confirmation.png)
+
+---
 
 ## What it does
 
