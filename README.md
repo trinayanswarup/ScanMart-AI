@@ -1,56 +1,53 @@
 # ScanMart AI
 
-**A working multi-store retail platform - scan a product, and AI turns it into live inventory, a storefront listing, and a customer-ready order flow, in seconds.**
+**A multi-store retail platform where operators scan products into inventory, publish storefront listings, and manage customer orders through one shared backend.**
 
-ScanMart Retail Group runs three independent store formats - a salon, a café, and a grocery store - from one admin platform, with one shared customer storefront and cart. It's a full, working product: real AI vision extraction, a real Postgres-backed API, atomic order processing, and a tested codebase - not a static mockup or a slide deck.
+ScanMart AI models a retail group with multiple store formats under one company. The demo currently includes **Urban Glow Salon**, **Corner Café**, and **FreshMart Grocery**, each with its own inventory, listings, orders, and workflow traces.
 
-**ScanMart AI has two sides: an admin platform for store operators, and a public storefront for customers - sharing one real backend.**
+The platform has two sides:
 
-**Admin side** - ScanMart Retail Group operators manage three independent store formats (a salon, a café, and a grocery store) from one dashboard. Scan a product photo, barcode, or receipt, and AI extracts the name, category, and price with a confidence score before anything gets saved. Approve a listing and it publishes instantly. Every order, stock change, and AI action is logged in a full workflow trace.
+- **Admin platform** - operators manage store-specific inventory, scan products, approve listings, process orders, and inspect workflow logs.
+- **Customer storefront** - shoppers browse products across stores, add items into one shared cart, and checkout once. The system splits the checkout into separate store orders internally.
 
-**Storefront side** - customers browse all three stores from a single shared cart. Checkout automatically splits the order by store, so each seller only ever sees their own orders. Stock validates and reduces atomically on acceptance - exactly once, every time.
+AI is part of the product workflow rather than a chat box added beside it. Product scans go through extraction, confidence scoring, seller review, inventory creation, storefront publishing, and workflow logging.
 
-Both sides run on the same real backend: a FastAPI API backed by Postgres, not a mock or a static demo.
+The current version uses a real FastAPI backend with Supabase Postgres, NVIDIA NIM vision extraction, OCR/barcode support, atomic order processing, and a tested codebase (70 tests).
 
 ---
 
 ## Screenshots
 
+### Landing page
+
 ![Landing Page](./docs/screenshots/landing.png)
 
----
+### Admin dashboard
 
 ![Admin Dashboard](./docs/screenshots/admin-dashboard.png)
 
----
+### AI scan flow
 
 ![AI Scan Flow](./docs/screenshots/scan-flow.png)
 
----
+### Public storefront
 
 ![Public Storefront](./docs/screenshots/storefront.png)
 
----
+### Cross-store cart flow
 
 ![Adding from multiple stores](./docs/screenshots/cart-step1-add.png)
-_Browsing Corner Café, adding coffee beans - items from any store go into one shared cart._
-
----
+_Browsing Corner Café and adding coffee beans. Items from any store go into one shared cart._
 
 ![Cart grouped by store](./docs/screenshots/cart-step2-grouped.png)
-_The cart automatically groups items by store._ three products, three stores, one checkout.\_
+_The cart groups products by store while keeping one customer checkout experience._
 
----
-
-![Cart grouped by store](./docs/screenshots/cart-step3-grouped.png)
-_three products, three stores, one checkout._
-
----
+![Three stores, one cart](./docs/screenshots/cart-step3-grouped.png)
+_Three products from three stores, still inside one cart._
 
 ![Checkout splits per store](./docs/screenshots/cart-step4-split.png)
-_Confirming the order creates a separate order per store - each seller only ever sees their own._
+_Checkout creates separate store orders internally, so each store only receives its own order._
 
----
+### Order confirmation
 
 ![Order Confirmation](./docs/screenshots/order-confirmation.png)
 
@@ -58,55 +55,80 @@ _Confirming the order creates a separate order per store - each seller only ever
 
 ## What it does
 
-Small business owners waste hours manually entering product data. ScanMart AI eliminates that:
+Small businesses often enter the same product data across inventory, listings, and order systems. ScanMart AI reduces that manual work with a scan-to-storefront workflow.
 
-1. **Scan** - photo, camera, barcode, manual text, or a receipt/invoice for bulk import
-2. **Extract** - NVIDIA NIM vision model reads the label and returns structured data with a confidence score
-3. **Review** - the seller sees exactly what the AI extracted and edits any field
-4. **Approve** - one click publishes to a public storefront
-5. **Track** - every step is logged in a workflow execution trace
+1. **Scan** - upload a product photo, use camera input, scan a barcode, enter label text, or import a receipt/invoice.
+2. **Extract** - the vision/OCR pipeline returns structured product data with confidence scoring.
+3. **Review** - the operator edits or approves the extracted fields before anything is saved.
+4. **Publish** - approved products can become live storefront listings.
+5. **Sell** - customers browse across stores and checkout with one cart.
+6. **Track** - stock changes, order actions, and AI steps are logged in workflow traces.
 
-ScanMart Retail Group operates three store formats - Urban Glow Salon, Corner Café, and FreshMart Grocery - each with independent inventory, orders, and workflows, sharing one admin platform and one customer storefront.
+ScanMart Retail Group operates multiple store formats from one admin platform while keeping inventory and orders scoped per store.
+
+---
 
 ## Tech stack
 
-| Layer         | Choice                                                                        |
-| ------------- | ----------------------------------------------------------------------------- |
-| Frontend      | Next.js 15 (App Router), React 19, TypeScript strict                          |
-| AI extraction | NVIDIA NIM - `meta/llama-3.2-11b-vision-instruct`                             |
-| OCR / Barcode | Tesseract.js (3-angle scan), `@zxing/browser` + Open Food Facts               |
-| Styling       | Tailwind CSS 4, CSS custom properties, dark mode                              |
-| Validation    | Zod                                                                           |
-| Backend       | FastAPI + asyncpg (Python)                                                    |
-| Database      | Supabase Postgres - shared inventory, orders, workflows                       |
-| Cart          | localStorage - private per customer, never sent to the backend until checkout |
-| Tests         | Vitest, 70 tests                                                              |
-| Eval tooling  | Python - pandas, rapidfuzz, Pillow                                            |
+| Layer         | Choice                                             |
+| ------------- | -------------------------------------------------- |
+| Frontend      | Next.js 15 App Router, React 19, TypeScript strict |
+| AI extraction | NVIDIA NIM - `meta/llama-3.2-11b-vision-instruct`  |
+| OCR / Barcode | Tesseract.js, `@zxing/browser`, Open Food Facts    |
+| Styling       | Tailwind CSS 4, CSS custom properties, dark mode   |
+| Validation    | Zod                                                |
+| Backend       | FastAPI + asyncpg                                  |
+| Database      | Supabase Postgres                                  |
+| Cart          | `localStorage` until checkout                      |
+| Tests         | Vitest, 70 tests                                   |
+| Eval tooling  | Python, pandas, rapidfuzz, Pillow                  |
+
+---
 
 ## Key features
 
-- Four scan modes: photo/camera, barcode, manual text, receipt/invoice bulk import
-- Multimodal AI extraction with confidence scoring and human review before anything publishes
-- Product photos captured from scans, shown on storefront listings
-- Atomic, idempotent order acceptance - stock validates and reduces exactly once
-- Full workflow audit trail, server-side
-- Multi-store cart with per-store checkout splitting
+- Multi-store admin platform for a single retail group
+- Store-specific inventory, listings, orders, and workflow traces
+- Product capture through photo, camera, barcode, manual text, and receipt/invoice import
+- Multimodal AI extraction with confidence scoring
+- Human review before inventory or storefront publication
+- Product photos captured from scans and shown on storefront listings
+- Public storefront with cross-store shopping
+- Shared customer cart across multiple stores
+- Checkout splitting into separate store orders
+- Atomic, idempotent order acceptance
+- Server-side workflow audit trail
 - Dark mode
+- Test suite and extraction evaluation harness
+
+---
 
 ## Architecture
 
-```
-Scan → OCR / barcode detection → NVIDIA NIM extraction → seller review
-  → POST to backend → Postgres (Supabase)
-  → draft listing + workflow execution → seller approval → live storefront
-  → customer order → atomic stock check → order accepted → stock reduced once
+```text
+Scan / barcode / receipt
+→ OCR and product extraction
+→ seller review
+→ FastAPI backend
+→ Supabase Postgres
+→ inventory record
+→ draft listing
+→ seller approval
+→ public storefront
+→ customer cart
+→ checkout split by store
+→ order acceptance
+→ atomic stock reduction
+→ workflow trace
 ```
 
-Cart state lives in the browser (localStorage) and stays private until checkout. Everything else - inventory, listings, orders, workflows - is shared, real data served by a FastAPI backend backed by Postgres.
+Cart state stays in the browser until checkout. Inventory, listings, orders, and workflows are stored through the backend and shared across the platform.
+
+---
 
 ## Getting started
 
-**Frontend**
+### Frontend
 
 ```bash
 git clone https://github.com/trinayanswarup/ScanMart-AI
@@ -116,34 +138,43 @@ cp .env.example .env.local
 npm run dev
 ```
 
-**Backend**
+### Backend
 
 ```bash
 cd scanmart-backend
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 python seed.py
 uvicorn main:app --reload
 ```
 
-Full backend setup and Render deploy notes: `scanmart-backend/README.md`.
+On Windows PowerShell, activate the virtual environment with:
 
-Demo access: `admin@scanmart.eu` / `admin123`, or use the "Enter Demo Workspace" button on the login page for credential-free access.
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+Full backend setup and Render deploy notes are in `scanmart-backend/README.md`.
+
+**Demo access:** `admin@scanmart.eu` / `admin123`, or use the "Enter Demo Workspace" button on the login page.
+
+---
 
 ## Python evaluation harness
 
-`eval/` measures real extraction accuracy against a hand-labeled 22-image dataset of real product photos.
+The `eval/` directory measures extraction accuracy against a hand-labeled 22-image dataset of real product photos.
 
 ```bash
 cd eval
 pip install -r requirements.txt
-python run_eval.py               # baseline
-python run_eval.py --preprocess  # with image preprocessing
-python report.py                 # accuracy by failure category
+python run_eval.py
+python run_eval.py --preprocess
+python report.py
 ```
 
-**Results (22-image dataset, raw images):**
+Current results on raw images:
 
 | Metric                            | Score |
 | --------------------------------- | ----- |
@@ -151,28 +182,48 @@ python report.py                 # accuracy by failure category
 | Name accuracy                     | 68%   |
 | Category accuracy                 | 55%   |
 
-Preprocessing (EXIF orientation, contrast, sharpening) improved category accuracy on clean images by 12 points but had no effect on blur, small text, or store-branded packaging - those are model/prompt-level failures, not image-quality ones. The preprocessing pipeline also exists as a standalone FastAPI microservice (`scanmart-preprocess/`), built and tested but not yet wired into production.
+Preprocessing improved category accuracy on clean images by 12 points, but did not solve blur, small text, or store-branded packaging. Those failures are model/prompt-level issues rather than image-quality issues.
+
+The preprocessing pipeline also exists as a standalone FastAPI microservice in `scanmart-preprocess/`, built and tested but not yet wired into production.
+
+---
 
 ## Environment variables
 
 ```env
 # .env.local
 NVIDIA_API_KEY=
-NEXT_PUBLIC_API_URL=          # FastAPI backend URL
+NEXT_PUBLIC_API_URL=
 
 # scanmart-backend/.env
-DATABASE_URL=                 # Supabase Postgres connection string
+DATABASE_URL=
 ```
+
+---
 
 ## Roadmap
 
-- **Done** - AI scan (4 modes), inventory, listings, storefront, cart/checkout, workflow traces, FastAPI + Postgres backend, atomic order processing, test suite, eval harness
+- **Done** - AI scan modes, inventory, listings, storefront, cart/checkout, workflow traces, FastAPI + Postgres backend, atomic order processing, test suite, evaluation harness
 - **In progress** - real authentication and business ownership, product image storage, background workflow runner
-- **Planned** - Electronics and Fashion store verticals, correction-based accuracy improvements, operational analytics, multi-staff roles, payments
+- **Planned** - electronics and fashion store verticals, correction-based extraction improvements, operational analytics, multi-staff roles, payments
+
+---
 
 ## Development process
 
-Built with Claude Code as the primary development agent. See [AGENTS-REPO.md](./AGENTS-REPO.md), [CLAUDE-REPO.md](./CLAUDE-REPO.md), and [PRD-REPO.md](./PRD-REPO.md) for the operating rules, project context, and requirements used throughout development.
+Built with Claude Code as the primary development agent.
+
+See [AGENTS-REPO.md](./AGENTS-REPO.md), [CLAUDE-REPO.md](./CLAUDE-REPO.md), and [PRD-REPO.md](./PRD-REPO.md) for the operating rules, project context, and requirements used during development.
+
+---
+
+## Project boundaries
+
+ScanMart AI is a portfolio MVP, not a production retail system.
+
+The current version is designed to demonstrate the complete product flow: product capture → reviewed extraction → inventory → storefront listing → cross-store cart → split checkout → order acceptance → workflow trace.
+
+It does not yet include production-grade authentication, payments, delivery routing, staff permissions, or multi-tenant billing.
 
 ---
 
