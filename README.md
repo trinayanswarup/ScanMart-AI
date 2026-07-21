@@ -13,6 +13,10 @@ AI is part of the product workflow rather than a chat box added beside it. Produ
 
 The current version uses a real FastAPI backend with Supabase Postgres, NVIDIA NIM vision extraction, OCR/barcode support, atomic order processing, and a tested codebase (70 tests).
 
+**Live demo:** https://scan-mart-ai.vercel.app
+
+> ⚠️ **First load may take up to 50 seconds.** The backend runs on Render's free tier and sleeps after inactivity — please be patient on your first click, it will load.
+
 ---
 
 ## Screenshots
