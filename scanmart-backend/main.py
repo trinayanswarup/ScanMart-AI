@@ -377,11 +377,13 @@ async def update_inventory(item_id: str, body: InventoryPatch):
 async def get_listings(store_id: str):
     pool = await get_pool()
     rows = await pool.fetch(
-        """SELECT id, business_id, inventory_item_id, title, description,
-                  price, image_url, is_published
-           FROM product_listings
-           WHERE business_id = $1::uuid
-           ORDER BY created_at DESC""",
+        """SELECT pl.id, pl.business_id, pl.inventory_item_id, pl.title, pl.description,
+                  pl.price, pl.image_url, pl.is_published
+           FROM product_listings pl
+           JOIN inventory_items ii ON ii.id = pl.inventory_item_id
+           WHERE pl.business_id = $1::uuid
+             AND ii.status = 'active'
+           ORDER BY pl.created_at DESC""",
         store_id,
     )
     return [_row_to_listing(r) for r in rows]

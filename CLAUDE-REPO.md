@@ -1,97 +1,139 @@
-# CLAUDE-REPO.md — Project Context for Claude Code
+# CLAUDE-REPO.md - ScanMart AI
 
-> **Note:** The original AGENTS.md / CLAUDE.md / PRD.md files used during
-> development are excluded from this repository (see .gitignore) as they
-> contain internal working notes. This file summarizes the actual
-> conventions and requirements that were followed.
+## What this is
 
----
+ScanMart AI turns a product photo, barcode, text description, or receipt into structured inventory, a publishable storefront listing, and an auditable workflow trace. Built for ScanMart Retail Group - three store formats (salon, café, grocery) sharing one admin platform and one customer storefront.
 
-This document summarizes the project context and conventions stored in `CLAUDE.md` — the instructions given to Claude Code to orient it in this repository across sessions.
+## Commands
 
-## What this project is
+```bash
+npm run dev
+npm run typecheck
+npm run lint
+npm run test     # 70 tests
+npm run build
+```
 
-ScanMart AI converts a product photo or label text into a structured inventory record, a publishable storefront listing, and an auditable workflow execution trace. It targets small inventory-based businesses (salons, cafés, grocery stores) that need to digitize stock without adopting a complex ERP.
-
-The application is a self-contained demo: it runs entirely in the browser with `localStorage` as the persistence layer and a deterministic mock AI extractor as the offline fallback. A Supabase schema is included as the planned production data model but is not yet wired to the client.
+Run typecheck + lint after every substantive change. Run test after touching app-provider, validation, AI logic, or routes. Run build for anything touching routing or config.
 
 ## Tech stack
 
-| Concern | Choice |
-|---|---|
-| Framework | Next.js 15 App Router, React 19 |
-| Language | TypeScript 5.7, strict mode |
-| AI extraction | NVIDIA NIM — `meta/llama-3.2-11b-vision-instruct` |
-| OCR | Tesseract.js 7 (browser-side, three-angle scan) |
-| Barcode | `@zxing/browser` → Open Food Facts API |
-| Styling | Tailwind CSS 4, Lucide React, CSS custom properties |
-| Validation | Zod 3 |
-| Tests | Vitest 4, `@testing-library/react` |
-| Storage | `localStorage` (demo) · Supabase (production schema) |
+| Concern       | Choice                                             |
+| ------------- | -------------------------------------------------- |
+| Framework     | Next.js 15 App Router, React 19, TypeScript strict |
+| AI extraction | NVIDIA NIM - `meta/llama-3.2-11b-vision-instruct`  |
+| OCR           | Tesseract.js, browser-side, 3-angle scan           |
+| Barcode       | `@zxing/browser` → Open Food Facts                 |
+| Styling       | Tailwind CSS 4, CSS custom properties (dark mode)  |
+| Validation    | Zod                                                |
+| Backend       | FastAPI + asyncpg (`scanmart-backend/`)            |
+| Database      | Supabase Postgres                                  |
+| Cart          | localStorage only (`scanmart_cart_v1`)             |
+| Tests         | Vitest, jsdom + node environments                  |
 
-**Note on the AI provider:** The repository's README mentions Gemini, but the extraction endpoint (`app/api/extract/route.ts`) uses NVIDIA NIM. NVIDIA's free tier was selected to keep the project accessible without a billing account.
+Free-tier APIs only. Do not swap providers without discussion.
 
-## Route structure
+## Routes
 
-Admin (seller) routes are scoped under `app/admin/[storeId]/` — the `storeId` dynamic segment identifies which business the seller is managing. Public routes (`app/shop/`, `app/cart/`, `app/order-confirmation/`) are kept completely separate from admin routes and must never expose seller-only controls.
+```
+app/
+  page.tsx                       Landing page
+  auth/page.tsx                  Admin login (hardcoded creds + demo bypass)
+  admin/
+    page.tsx                     Store picker
+    [storeId]/                   Per-store seller dashboard, scan, inventory,
+                                  orders, automations, settings
+  shop/
+    page.tsx                     Store directory
+    [storeSlug]/page.tsx         Public storefront
+  cart/page.tsx                  Multi-store cart and checkout
+  order-confirmation/[id]/       Confirmation page
+  api/extract/route.ts           NVIDIA NIM extraction endpoint
+```
 
-Key admin pages: dashboard, inventory list, inventory/new (scan or manual), product detail, scan flow, orders list, order detail, automations list, execution detail, settings.
+## Architecture
 
-Key public pages: store directory, individual storefront (`[storeSlug]`), cart and checkout, order confirmation.
+**Data split:** Postgres via the FastAPI backend holds all shared data - stores, inventory, listings, orders, workflows, executions. localStorage holds only the customer's cart, private per browser until checkout.
 
-The extraction API lives at `app/api/extract/route.ts` and is the only server-side route.
+**State:** `AppProvider` (`components/app-provider.tsx`) fetches from `NEXT_PUBLIC_API_URL` on mount and exposes typed mutations. Per-store data loads lazily via `setCurrentStoreId`; `loadedStoreIdsRef` prevents duplicate fetches; `loadAllStores()` batch-loads for `/shop` and `/admin` index pages. `storeDataLoading` gates UI so counts don't flash zero before data arrives.
 
-## State management
+**setState timing gotcha:** in React 18+, a value assigned inside a `setState` updater is not visible to code after the `setState` call in the same function - the updater runs later. Validate against `state` _before_ calling `setState`, return the result, then mutate:
 
-All application state lives in `AppProvider` (`components/app-provider.tsx`) and is consumed via `useApp()`. Mutations are `useCallback` functions that call React's `setState` with a functional updater for immutability. State is serialized to `localStorage` under a versioned key on every change and rehydrated on mount.
+````
 
-**Key architectural constraint identified during development:** In React 18+ concurrent mode, `setState(updater)` schedules the updater to run during the next render — after the enclosing function has already returned its value. This means mutations that need to return a result (success/failure) to the caller must validate synchronously against the current `state` snapshot *before* calling `setState`, not inside the updater. Returning a value assigned inside an updater will always return the initial value. The `useCallback` dependency array must include `state` when the function reads from it for validation.
+**Dark mode:** `ThemeProvider` toggles `.dark` on `<html>`. Always use CSS custom properties (`var(--canvas)`, `var(--surface)`, `var(--ink)`, `var(--line)`, `var(--brand)`, `var(--brand-soft)`) - never hard-coded colors.
 
-## Dark mode
+**AI extraction:** `POST /api/extract` accepts `{ imageBase64?, mimeType?, ocrText?, userText?, businessType?, mode? }`. Strips markdown fences and leading prose before validating against `productAIExtractionSchema`. `mode: "receipt"` returns `{ items: [...] }` instead of one product. 55s timeout, falls back to `mockExtractProduct()` on failure.
 
-`ThemeProvider` toggles the `.dark` class on `<html>`. All colors in both component inline styles and CSS classes must use CSS custom properties:
+**Scan modes:** Photo/Camera, Barcode, Text Entry, Receipt/Invoice - four independent tabs on `app/admin/[storeId]/scan/page.tsx`. Don't merge their state or handlers.
 
-- `var(--canvas)` — page background
-- `var(--surface)` — card and input backgrounds
-- `var(--ink)` — primary text
-- `var(--ink-muted)` — secondary/muted text
-- `var(--line)` — borders and dividers
-- `var(--brand)` — brand green
-- `var(--brand-soft)` — light green tint (replaces hard-coded `#F0FAF5`)
+**Inventory/listings:** one listing per item max. `source: "ai_scan"` creates a draft listing + `PRODUCT_SCANNED` workflow execution server-side; `source: "manual"` does not. Publishing needs a title, description, and positive price.
 
-Hard-coded hex values (`#ffffff`, `#F0FAF5`, etc.) break dark mode and were systematically replaced during development.
+**Orders - six invariants:**
+
+1. Validate all line-item stock before any mutation
+2. No partial mutations
+3. Reduce stock exactly once
+4. Persist `stock_reduced_at` for idempotency
+5. Repeated "accepted" transitions never reduce stock again
+6. Item name/quantity/price are creation-time snapshots
+
+Enforced backend-side with `SELECT ... FOR UPDATE`.
+
+**Workflows:** triggers are `PRODUCT_SCANNED`, `ORDER_ACCEPTED`, `LOW_STOCK_DETECTED`. Human-approval nodes stay `waiting_for_human` until the seller acts.
+
+**Auth gate:** `app/auth/page.tsx` - hardcoded `admin@scanmart.eu` / `admin123` sets an `auth_mode=admin` cookie; "Enter Demo Workspace" sets `auth_mode=demo`. Demo-grade, not production auth.
+
+**Eval harness:** `eval/` is standalone Python, not imported by the app. Run manually:
+
+```bash
+cd eval && python run_eval.py            # baseline
+python run_eval.py --preprocess          # with image preprocessing
+python report.py                         # accuracy by failure tag
+````
+
+Baseline on 22 real product photos: 41% overall, 68% name, 55% category. `scanmart-preprocess/` is a standalone FastAPI microservice sharing the preprocessing pipeline - not wired into the live scan page.
 
 ## Validation
 
-All external data — AI model output, user form input, URL parameters, Open Food Facts API responses — is validated with Zod before entering application state. Schemas live in `lib/validation.ts`. The primary schema is `productAIExtractionSchema`, which enforces non-empty strings, confidence bounds (0–1), and coerces numeric fields.
+All untrusted data - AI output, form input, URL params, external API responses - validated with Zod before entering state. Extend `lib/validation.ts`, don't re-declare.
 
-## Test suite
+## Tests
 
-54 tests across four files in `__tests__/`:
+70 tests across `__tests__/`:
 
-- `app-provider.test.tsx` — all state mutations (addToCart, placeOrder, updateOrderStatus, addInventory) tested via `renderHook` + `act`
-- `ai.test.ts` — `confidenceLabel` boundary values, `lookupBarcode` network and not-found cases
-- `validation.test.ts` — `productAIExtractionSchema` valid and invalid payloads
-- `extract-route.test.ts` — route handler error paths, JSON cleaning (markdown fences, leading prose), missing API key
+- `app-provider.test.tsx` - mutations via `renderHook` + `act`, mocked backend
+- `ai.test.ts` - `confidenceLabel` boundaries, `lookupBarcode` cases
+- `validation.test.ts` - schema edge cases
+- `extract-route.test.ts` - route handler, `@vitest-environment node`
 
-Route handler tests declare `// @vitest-environment node` at the file level to run in Node instead of jsdom. The global setup (`vitest.setup.ts`) guards `localStorage.clear()` behind a `typeof localStorage !== "undefined"` check for the same reason.
+## Conventions
 
-## Conventions followed
+- Small typed functions, no premature abstraction
+- `any` is never acceptable; narrow `unknown` explicitly
+- `@/` import alias throughout
+- No new dependencies without a concrete reason
+- Prices in euros (€)
+- Seller controls never appear in shop/cart/checkout routes
+- Async buttons need a loading state: disabled + spinner + short status text
+- Keep `types/index.ts` and `scanmart-backend/models.py` in sync when entity shapes change
 
-- Strict TypeScript — `any` is never used; `unknown` is narrowed explicitly.
-- Direct control flow — small typed functions, no premature abstraction.
-- CSS custom properties — never hard-code colors in components.
-- Source gating — workflow executions are only created for `source === "ai_scan"` inventory items, not manually entered ones.
-- Order invariants — stock is validated atomically across all line items before any mutation; `stockReduced` persists to prevent double-deduction.
-- Free-tier APIs only — NVIDIA NIM (extraction), Open Food Facts (barcode lookup), Tesseract.js (local OCR).
-- No secrets in `NEXT_PUBLIC_` variables.
-- The `@/` path alias is used for all project imports.
-
-## Session-end checklist
+## Session end
 
 ```bash
-npm run typecheck   # must pass
-npm run lint        # must pass
-npm run test        # must pass (54 tests)
-npm run build       # run if routes, layouts, or config changed
+npm run typecheck && npm run lint && npm run test
+npm run build   # if routes/layout/config changed
 ```
+
+## Environment variables
+
+```
+# .env.local
+NVIDIA_API_KEY=
+NEXT_PUBLIC_API_URL=
+
+# scanmart-backend/.env
+DATABASE_URL=
+```
+
+Never commit secrets. Never put secrets in `NEXT_PUBLIC_` variables.

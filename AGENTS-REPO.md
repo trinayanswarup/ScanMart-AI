@@ -1,143 +1,170 @@
-# AGENTS-REPO.md — AI Agent Operating Rules
+# AGENTS-REPO.md
 
-> **Note:** The original AGENTS.md / CLAUDE.md / PRD.md files used during
-> development are excluded from this repository (see .gitignore) as they
-> contain internal working notes. This file summarizes the actual
-> conventions and requirements that were followed.
+Project-specific guardrails for coding agents working in ScanMart AI.
 
----
+## Overview
 
-This document describes the rules and guardrails that governed AI coding agents (Claude Code, Codex) working in this repository.
+Two persistence layers:
 
-## Project overview given to agents
+- **Shared data** (stores, inventory, listings, orders, workflows, executions) → FastAPI backend (`scanmart-backend/`) → Supabase Postgres.
+- **Customer cart** → `localStorage` only (`scanmart_cart_v1`), private per browser, never sent to the backend until checkout.
 
-ScanMart AI is a Next.js 15 App Router application with two persistence layers: a browser `localStorage` runtime for the demo, and a PostgreSQL/Supabase schema as the intended production target. Agents were instructed not to describe Supabase as connected unless a task explicitly implemented that integration.
+Don't conflate the two. Don't describe Supabase as "not yet connected" - it's live.
 
-## Commands agents were required to know
+## Commands
 
 ```bash
 npm install
 npm run dev
 npm run typecheck
 npm run lint
-npm run build
-npm run test        # added during development; vitest run
+npm run test      # 70 tests - run after logic changes
+npm run build      # run for routing/config/dependency changes
 ```
 
-Typecheck and lint were required to pass after every substantive change. Build was required for routing, configuration, or release-facing changes.
+## Repository map
 
-## Architecture rules enforced
+```
+app/
+  page.tsx                Landing page
+  auth/page.tsx            Admin login (hardcoded creds + demo bypass)
+  admin/[storeId]/         Seller dashboard, scoped per store
+  shop/[storeSlug]/        Public storefront
+  cart/, order-confirmation/[id]/
+  api/extract/route.ts     NVIDIA NIM endpoint
+components/app-provider.tsx   State + API calls to backend
+lib/                        ai.ts, seed.ts, validation.ts
+types/index.ts               Shared domain types
+__tests__/                   Vitest suite (70 tests)
+supabase/                    schema.sql, schema_additions.sql
+scanmart-backend/            FastAPI backend
+eval/                        Python evaluation harness (standalone)
+scanmart-preprocess/         Image preprocessing microservice (standalone, not wired in)
+PRD.md
+```
 
-### Client state
+## Architecture rules
 
-- `AppProvider` is the single source of truth for demo data.
-- `useApp()` may only be called under `AppProvider`.
-- State updates must be immutable; use functional `setState` updaters when deriving new state from current state.
-- The versioned `localStorage` key (`scanmart_shared_v2`) must be preserved. Breaking changes require a migration or key bump.
-- Browser-only APIs must remain in client components or browser-only code paths.
+### State and API
+
+- `AppProvider` is the single source of truth client-side.
+- `useApp()` only under `AppProvider`.
+- All shared data flows through the backend API (`NEXT_PUBLIC_API_URL`); cart mutations (`addToCart`, `removeFromCart`, `setCartQuantity`, `clearCart`) are pure `setState`, no API calls.
+- Immutable updates; functional `setState` updaters when deriving from current state.
+- Browser-only APIs stay in client components.
 
 ### Domain model
 
-- `types/index.ts` is authoritative for all application entities.
-- `lib/seed.ts`, `components/app-provider.tsx`, and relevant pages must stay consistent with type definitions.
-- Supabase schema and seed files must be updated whenever a domain change belongs in the production model.
-- Strict TypeScript throughout — `any` is not permitted; `unknown` must be narrowed explicitly.
+- `types/index.ts` is authoritative on the frontend; `scanmart-backend/models.py` mirrors it (camelCase) - keep both in sync.
+- Update `supabase/schema.sql` / `schema_additions.sql` when a change belongs in the production model.
+- Strict TypeScript - no `any`; narrow `unknown` explicitly.
+
+### Backend
+
+- Runs separately: `uvicorn main:app --reload` from `scanmart-backend/`.
+- Connects via `DATABASE_URL` as the Postgres superuser, bypassing RLS - intentional, trusted service.
+- Never add Supabase anon/service-role keys to the backend.
+- `database.py` registers a jsonb codec - never `json.dumps()` before passing to a jsonb column.
+- Don't touch `scanmart-backend/` on frontend-only tasks without clarifying scope first.
 
 ### Validation
 
-- All untrusted data — AI output, form input, URL parameters, external API responses — must be validated with Zod before entering application state.
-- Reuse or extend schemas in `lib/validation.ts`.
-- User-facing validation failures must be specific and actionable.
+- All untrusted data (AI output, forms, URL params, external APIs) validated with Zod before entering state.
+- Extend `lib/validation.ts`, don't duplicate schemas.
 
-### AI behavior rules
+### AI behavior
 
-- AI output is always reviewable and editable before being committed to state.
-- Extraction results must preserve confidence score, detected text, and a short reasoning explanation.
-- All output must validate against `productAIExtractionSchema`.
-- Conservative output is preferred over invented detail when evidence is weak.
-- The mock provider must remain deterministic so the demo works offline without external API access.
-- Agents must not silently substitute a paid or network-dependent service for the mock.
-- When output is corrected by a user, both the original and corrected values must be preserved if they differ materially.
-- **API constraint:** Free-tier APIs only. The current production extractor is NVIDIA NIM (meta/llama-3.2-11b-vision-instruct), accessed via `app/api/extract/route.ts`.
+- Output is always reviewable and editable - never auto-committed.
+- Preserve confidence, detected text, reasoning.
+- Validate against `productAIExtractionSchema`.
+- Conservative output over invented detail when evidence is weak.
+- Mock provider stays deterministic - the app must work offline.
+- Never silently swap the mock for a paid/network-dependent service.
+- Preserve both original and corrected values when a user edits AI output.
+- Free-tier only: NVIDIA NIM (`meta/llama-3.2-11b-vision-instruct`) via `app/api/extract/route.ts`.
+
+### Scan modes
+
+Four independent modes on `app/admin/[storeId]/scan/page.tsx`: Photo/Camera, Barcode, Text Entry, Receipt/Invoice. Receipt mode returns a line-item table and uses `addInventoryBulk`. Don't merge state/handlers across modes.
 
 ### Inventory and listings
 
-- Quantities and low-stock thresholds cannot be negative.
-- Prices must be positive when supplied.
-- Each inventory item may have at most one storefront listing.
-- A confirmed AI scan creates an unpublished draft listing — it must not publish autonomously.
-- Publishing requires a non-empty title, description, and positive price.
-- The public storefront must show only published listings.
-- Workflow executions for `PRODUCT_SCANNED` must only be created when `item.source === "ai_scan"`, not for manually entered items.
+- Quantities/thresholds never negative; prices positive when supplied.
+- One listing per inventory item max.
+- AI-confirmed scans create an unpublished draft + `PRODUCT_SCANNED` execution server-side, only when `source === "ai_scan"`.
+- Publishing needs title, description, positive price.
+- Storefront shows published listings only.
 
-### Order acceptance invariants
+### Order acceptance - enforced by the backend
 
-1. Verify every line item has sufficient stock before mutating anything.
-2. Do not apply partial stock reductions — if any line fails, abort the entire acceptance.
+1. Verify stock for every line before mutating anything.
+2. No partial reductions - abort entirely if any line fails.
 3. Reduce stock exactly once.
-4. Persist the `stockReduced` marker with the accepted order to guarantee idempotency.
-5. Repeated status changes must not reduce stock again.
-6. Order item names and prices are creation-time snapshots and must never be mutated retroactively.
+4. Persist `stock_reduced_at` for idempotency.
+5. Repeated acceptance never reduces stock again.
+6. Order item name/quantity/price are immutable creation-time snapshots.
 
-For production persistence, order acceptance must be implemented as a server-side transaction or atomic database function.
+Backend uses `SELECT ... FOR UPDATE` to prevent races.
 
 ### Workflows
 
-- Consequential automated actions must be visible in an execution trace.
-- Each node execution must record input, output, status, error, and timestamp where applicable.
-- Human-approval nodes must not report success until the user acts.
-- Publishing through an approval step must still enforce listing validation (non-empty title/description, positive price).
-- Existing execution status values must be reused; near-duplicate values must not be introduced.
+- Every consequential automated action stays visible in an execution trace.
+- Nodes record input, output, status, error, timestamp.
+- Human-approval nodes report success only after the user acts.
+- Approval still enforces listing validation.
+- Reuse existing execution status values.
 
-## UI conventions enforced
+### Eval and preprocessing tools
 
-- Match the existing visual language — do not introduce a new component system without justification.
-- Reuse global CSS classes from `app/globals.css`: buttons, cards, inputs, grids, muted text, empty states.
-- Use only Lucide icons already included in the project.
-- All colors must use CSS custom properties (`var(--surface)`, `var(--canvas)`, `var(--ink)`, `var(--line)`, `var(--brand)`, `var(--brand-soft)`) — hard-coded hex values or color names break dark mode.
-- Preserve responsive behavior at the existing `800px` navigation breakpoint.
-- Seller dashboard controls must never appear in public storefront or checkout routes.
-- Every interactive control needs a label or accessible name.
-- Every state must be represented explicitly: empty, loading/waiting, success, and error.
-- Prices are in Indian rupees in the current demo — do not mix currencies.
+- `eval/` and `scanmart-preprocess/` are standalone Python tools - not imported by the Next.js app.
+- Don't modify eval scripts as a side effect of frontend work.
+- `scanmart-preprocess/` is not wired into the live scan page - don't assume it's active.
+
+## UI conventions
+
+- Match existing visual language; reuse global classes in `app/globals.css`.
+- Lucide icons only, already-included ones.
+- All colors via CSS custom properties - hard-coded hex breaks dark mode.
+- Preserve the `800px` responsive breakpoint.
+- Seller controls never appear on public/checkout routes.
+- Every control needs a label or accessible name.
+- Every state - empty, loading, success, error - must be explicit.
+- Async buttons: disabled + spinner (LoaderCircle) + short status text while in flight.
+- Prices in euros (€).
 
 ## Routing conventions
 
-- Admin (seller) routes live under `app/admin/[storeId]/`.
-- Public shopping routes live under `app/shop/[storeSlug]/`, `app/cart/`, and `app/order-confirmation/[id]/`.
-- Dynamic route parameters are treated as untrusted — missing records must produce a safe not-found or empty state, never a crash.
-- Use the `@/` path alias for all project imports.
+- Seller routes: `app/admin/[storeId]/`.
+- Public routes: `app/shop/[storeSlug]/`, `app/cart/`, `app/order-confirmation/[id]/`.
+- Treat URL params as untrusted - missing records get a safe empty/not-found state, never a crash.
+- `@/` alias for all imports.
 
-## Coding style requirements
+## Coding style
 
-- Small, typed functions and direct control flow.
-- Follow the formatting and patterns of the file being edited.
-- Page-specific logic stays in the page until reused or difficult to reason about.
-- Extract shared domain logic before duplicating it across pages.
-- Do not add a dependency when the platform or an existing package covers the need.
-- Never commit generated directories (`.next/`, `node_modules/`, `*.tsbuildinfo`).
-- Environment variable names must be documented in `.env.example`; secret values must never be committed.
+- Small typed functions, direct control flow.
+- Match the file being edited.
+- Page-specific logic stays local until reused elsewhere.
+- No new dependency unless the platform genuinely lacks the capability.
+- Never commit `.next/`, `node_modules/`, `*.tsbuildinfo`.
+- Document env var names in `.env.example`; never commit secret values.
 
-## Verification checklist (proportional to the change)
+## Verification checklist
 
-- `npm run typecheck` — always
-- `npm run lint` — always
-- `npm run test` — after any change to app-provider, validation, AI logic, or route handlers
-- `npm run build` — for routing, configuration, dependency, or release-facing changes
-- Manual browser verification of the affected user flow
-- For scan changes: test text-only input and image/OCR fallback paths
-- For listing changes: verify unpublished products stay off the storefront
-- For order changes: test sufficient stock, insufficient stock, and repeated acceptance
-- For workflow changes: inspect both the workflow summary view and the node trace detail
-- After any state-shape or persistence change: reload to verify `localStorage` hydration
+- `npm run typecheck`, `npm run lint` - always
+- `npm run test` - after app-provider/validation/AI/route changes
+- `npm run build` - for routing/config/dependency changes
+- Manual browser check of the affected flow
+- Scan changes: test all four modes, verify offline mock fallback
+- Listing changes: confirm unpublished items stay off the storefront
+- Order changes: test sufficient stock, insufficient stock, repeated acceptance
+- Workflow changes: check both summary and node trace views
+- Backend-persisted field changes: verify `types/index.ts` and `models.py` match
 
 ## Definition of done
 
-A change is complete when:
-
-- it satisfies the relevant requirements in `PRD.md`;
-- all domain invariants above remain intact;
-- TypeScript and lint checks pass;
-- the affected end-to-end user flow has been manually exercised;
-- types, seed data, validation schemas, and Supabase schema are updated where affected;
-- no secrets, generated artifacts, or unrelated edits are included in the commit.
+- Satisfies `PRD.md` requirements
+- Domain invariants intact
+- Typecheck, lint, tests pass
+- Affected flow manually exercised
+- Types, schemas, backend models, Supabase schema updated where relevant
+- No secrets, generated artifacts, or unrelated changes included

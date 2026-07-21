@@ -1,12 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, LoaderCircle, Search, ShieldCheck, ShoppingBag, Plus, Minus, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LoaderCircle, ShieldCheck, ShoppingBag, Plus, Minus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
 import { useApp } from "@/components/app-provider";
 import { checkoutSchema } from "@/lib/validation";
+
+function CartThumb({ imageUrl, productName }: { imageUrl?: string; productName: string }) {
+  const [errored, setErrored] = useState(false);
+  return (
+    <div style={{ width: 56, height: 56, borderRadius: 8, background: "var(--brand-soft)", border: "1px solid var(--line)", display: "grid", placeItems: "center", overflow: "hidden", flexShrink: 0, color: "var(--brand)", fontWeight: 800, fontSize: 20 }}>
+      {imageUrl && !errored
+        ? <img src={imageUrl} alt={productName} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErrored(true)} />
+        : productName.charAt(0).toUpperCase()}
+    </div>
+  );
+}
 
 export default function CartPage() {
   const { state, setCartQuantity, placeOrder } = useApp();
@@ -73,11 +84,8 @@ export default function CartPage() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {details.map((item) => (
-              <div key={item.listingId} style={{ display: "grid", gridTemplateColumns: "70px 1fr auto", gap: 18, alignItems: "center" }}>
-                {/* Abstract Pattern Fallback Image */}
-                <div style={{ width: 70, height: 70, borderRadius: 8, background: "linear-gradient(135deg, #E0F2E9, #F4F7F5)", border: "1px solid var(--line)", display: "grid", placeItems: "center" }}>
-                   <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--brand)", opacity: 0.1 }} />
-                </div>
+              <div key={item.listingId} style={{ display: "grid", gridTemplateColumns: "56px 1fr auto", gap: 16, alignItems: "center" }}>
+                <CartThumb imageUrl={item.imageUrl} productName={item.productName} />
                 <div>
                   <strong style={{ fontSize: 16, color: "var(--ink)" }}>{item.productName}</strong>
                   <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 4 }}>€{item.price} each · {item.storeName}</span>

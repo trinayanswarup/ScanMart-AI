@@ -67,7 +67,7 @@ export default function ShopStorefrontPage() {
   const categories = ["All", ...new Set(storeListings.filter((l) => l.isPublished).map((l) => storeInv.find((i) => i.id === l.inventoryItemId)?.category).filter(Boolean) as string[])];
   const products = useMemo(() => storeListings.filter((listing) => {
     const item = storeInv.find((entry) => entry.id === listing.inventoryItemId);
-    return listing.isPublished && item && item.quantity > 0 && (category === "All" || item.category === category) && listing.title.toLowerCase().includes(search.toLowerCase());
+    return listing.isPublished && item && item.status === "active" && item.quantity > 0 && (category === "All" || item.category === category) && listing.title.toLowerCase().includes(search.toLowerCase());
   }), [storeListings, storeInv, category, search]);
 
   // Use the full cart across all stores — customers accumulate items from multiple stores.
