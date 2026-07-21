@@ -1,6 +1,18 @@
 # ScanMart AI
 
-AI-powered inventory management for multi-store retail groups - scan a label, get a live product listing in seconds.
+**A working multi-store retail platform - scan a product, and AI turns it into live inventory, a storefront listing, and a customer-ready order flow, in seconds.**
+
+ScanMart Retail Group runs three independent store formats - a salon, a café, and a grocery store - from one admin platform, with one shared customer storefront and cart. It's a full, working product: real AI vision extraction, a real Postgres-backed API, atomic order processing, and a tested codebase - not a static mockup or a slide deck.
+
+**ScanMart AI has two sides: an admin platform for store operators, and a public storefront for customers - sharing one real backend.**
+
+**Admin side** - ScanMart Retail Group operators manage three independent store formats (a salon, a café, and a grocery store) from one dashboard. Scan a product photo, barcode, or receipt, and AI extracts the name, category, and price with a confidence score before anything gets saved. Approve a listing and it publishes instantly. Every order, stock change, and AI action is logged in a full workflow trace.
+
+**Storefront side** - customers browse all three stores from a single shared cart. Checkout automatically splits the order by store, so each seller only ever sees their own orders. Stock validates and reduces atomically on acceptance - exactly once, every time.
+
+Both sides run on the same real backend: a FastAPI API backed by Postgres, not a mock or a static demo.
+
+---
 
 ## Screenshots
 
@@ -21,7 +33,7 @@ AI-powered inventory management for multi-store retail groups - scan a label, ge
 ---
 
 ![Adding from multiple stores](./docs/screenshots/cart-step1-add.png)
-_Browsing Corner Café, adding coffee beans — items from any store go into one shared cart._
+_Browsing Corner Café, adding coffee beans - items from any store go into one shared cart._
 
 ---
 
@@ -36,7 +48,7 @@ _three products, three stores, one checkout._
 ---
 
 ![Checkout splits per store](./docs/screenshots/cart-step4-split.png)
-_Confirming the order creates a separate order per store — each seller only ever sees their own._
+_Confirming the order creates a separate order per store - each seller only ever sees their own._
 
 ---
 
