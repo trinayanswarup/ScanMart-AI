@@ -78,7 +78,12 @@ export default function AdminAutomationDetailPage() {
   const [selectedId, setSelectedId] = useState(executions[0]?.id);
   
   const selected = executions.find((item) => item.id === selectedId) || executions[0];
-  
+
+  const linkedInventoryItemId = selected?.nodes
+    .find((n) => n.nodeType === "GENERATE_PRODUCT_DESCRIPTION" || n.nodeType === "CREATE_DRAFT_LISTING")
+    ?.input?.inventoryItemId as string | undefined;
+  const linkedItem = linkedInventoryItemId ? state.inventory.find((i) => i.id === linkedInventoryItemId) : undefined;
+
   if (!workflow) return <div className="page-wrap"><div className="empty">Activity not found.</div></div>;
 
   return (
@@ -137,6 +142,17 @@ export default function AdminAutomationDetailPage() {
               {actionMessage && (
                 <div style={{ background: actionMessage.includes("approved") ? "var(--brand-soft)" : "rgba(239, 68, 68, 0.1)", color: actionMessage.includes("approved") ? "var(--brand)" : "var(--danger)", padding: 16, borderRadius: 8, marginBottom: 32, fontSize: 14, fontWeight: 600 }}>
                   {actionMessage}
+                  {actionMessage.includes("Set a product price") && linkedInventoryItemId && (
+                    <div style={{ marginTop: 12 }}>
+                      <Link
+                        href={`/admin/${storeId}/products/${linkedInventoryItemId}`}
+                        className="btn btn-secondary"
+                        style={{ fontSize: 13 }}
+                      >
+                        {linkedItem ? `Set price for "${linkedItem.name}"` : "Go to product"} →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
 

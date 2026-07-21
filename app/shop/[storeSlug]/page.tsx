@@ -15,6 +15,7 @@ const getStoreGradient = (type: string) => {
 };
 
 const FallbackImage = ({ seed }: { seed: string }) => {
+  void seed;
   return (
     <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #E0F2E9, #F4F7F5)", display: "grid", placeItems: "center" }}>
        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
@@ -25,6 +26,19 @@ const FallbackImage = ({ seed }: { seed: string }) => {
     </div>
   );
 };
+
+function ProductImage({ src, alt, seed }: { src?: string; alt: string; seed: string }) {
+  const [errored, setErrored] = useState(false);
+  if (!src || errored) return <FallbackImage seed={seed} />;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      onError={() => setErrored(true)}
+    />
+  );
+}
 
 export default function ShopStorefrontPage() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
@@ -113,7 +127,7 @@ export default function ShopStorefrontPage() {
                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 20px 40px rgba(4, 26, 21, 0.08)"; }}
                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "var(--shadow-soft)"; }}>
               <div style={{ height: 240, position: "relative", background: "#F4F7F5" }}>
-                {item.imageUrl?.startsWith("data:") ? <img src={item.imageUrl} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <FallbackImage seed={listing.id} />}
+                <ProductImage src={item.imageUrl} alt={listing.title} seed={listing.id} />
                 {item.quantity < 5 && <span className="badge badge-amber" style={{ position: "absolute", top: 12, right: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>Only {item.quantity} left</span>}
               </div>
               <div style={{ padding: 20, display: "flex", flexDirection: "column", flex: 1 }}>
@@ -151,8 +165,10 @@ export default function ShopStorefrontPage() {
         <div style={{ padding: "24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
           {storeCart.length ? storeCart.map((cartItem) => (
             <div className="card shadow-soft" key={cartItem.listingId} style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: 16, padding: 16, alignItems: "center" }}>
-              <div style={{ width: 70, height: 70, borderRadius: 8, background: "var(--brand-soft)", display: "grid", placeItems: "center", color: "var(--brand)", fontWeight: 800 }}>
-                {cartItem.productName.slice(0, 1)}
+              <div style={{ width: 70, height: 70, borderRadius: 8, background: "var(--brand-soft)", display: "grid", placeItems: "center", color: "var(--brand)", fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
+                {cartItem.imageUrl
+                  ? <img src={cartItem.imageUrl} alt={cartItem.productName} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                  : cartItem.productName.slice(0, 1)}
               </div>
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>

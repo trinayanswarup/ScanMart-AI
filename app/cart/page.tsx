@@ -40,9 +40,14 @@ export default function CartPage() {
         
         {/* Cart Items List */}
         <section className="card shadow-soft" style={{ padding: 32 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, borderBottom: "1px solid var(--line)", paddingBottom: 16 }}>
-            <ShoppingBag size={20} color="var(--brand)" />
-            <h2 className="section-title">Your Order ({details.reduce((s,i) => s + i.quantity, 0)} items)</h2>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 24, borderBottom: "1px solid var(--line)", paddingBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <ShoppingBag size={20} color="var(--brand)" />
+              <h2 className="section-title">Your Order ({details.reduce((s,i) => s + i.quantity, 0)} items)</h2>
+            </div>
+            <Link href="/shop" className="btn btn-secondary" style={{ fontSize: 13 }}>
+              <ArrowLeft size={14} /> Add more items
+            </Link>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {details.map((item) => (

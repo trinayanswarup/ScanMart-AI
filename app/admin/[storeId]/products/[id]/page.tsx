@@ -101,6 +101,18 @@ export default function AdminProductDetailPage() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Product image */}
+            {item.imageUrl && (
+              <section className="card shadow-soft" style={{ overflow: "hidden" }}>
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block" }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                />
+              </section>
+            )}
+
             {/* Status Card */}
             <section className="card shadow-soft" style={{ padding: 24 }}>
               <h3 style={{ fontSize: 14, fontWeight: 800, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 16 }}>Status</h3>

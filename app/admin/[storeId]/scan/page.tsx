@@ -51,6 +51,26 @@ function scoreOcr(text: string, confidence: number) {
   return confidence + Math.min(30, letters / 4) + Math.min(20, words * 2) + signals * 25;
 }
 
+async function generateThumb(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 400;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 async function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -89,6 +109,7 @@ export default function AdminScanPage() {
   const [mode, setMode] = useState<Mode>("photo");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
+  const [capturedThumb, setCapturedThumb] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
   const [camera, setCamera] = useState(false);
@@ -119,13 +140,14 @@ export default function AdminScanPage() {
     return () => video.removeEventListener("loadedmetadata", play);
   }, [camera]);
 
-  const chooseFile = (selected?: File) => {
+  const chooseFile = async (selected?: File) => {
     if (!selected) return;
     if (!selected.type.startsWith("image/")) { setError("Choose an image file (JPG, PNG, WEBP)."); return; }
     setFile(selected); setPreview(URL.createObjectURL(selected)); setResult(null); setError("");
+    try { setCapturedThumb(await generateThumb(selected)); } catch { setCapturedThumb(null); }
   };
-  const onFile = (e: ChangeEvent<HTMLInputElement>) => chooseFile(e.target.files?.[0]);
-  const drop = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); chooseFile(e.dataTransfer.files?.[0]); };
+  const onFile = (e: ChangeEvent<HTMLInputElement>) => { void chooseFile(e.target.files?.[0]); };
+  const drop = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); void chooseFile(e.dataTransfer.files?.[0]); };
 
   const openCamera = async () => {
     setCameraError("");
@@ -152,7 +174,8 @@ export default function AdminScanPage() {
     setLoading(true); setError(""); setScanProgress("Looking up barcode in Open Food Facts…");
     const found = await lookupBarcode(code);
     if (found) {
-      setOriginal(found); setResult(found); setUsedAI(false);
+      setOriginal(found.extraction); setResult(found.extraction); setUsedAI(false);
+      setCapturedThumb(found.imageUrl ?? null);
     } else {
       setError(`Barcode ${code} not found in Open Food Facts. Try scanning a product image instead.`);
     }
@@ -173,7 +196,8 @@ export default function AdminScanPage() {
       setScanProgress(`Barcode detected: ${barcode}. Looking up product…`);
       const found = await lookupBarcode(barcode);
       if (found) {
-        setOriginal(found); setResult(found); setUsedAI(false);
+        setOriginal(found.extraction); setResult(found.extraction); setUsedAI(false);
+        // Keep capturedThumb from the local photo — user already has a real scan of the product
         setLoading(false); setScanProgress("");
         return true;
       }
@@ -297,7 +321,7 @@ export default function AdminScanPage() {
     setFile(null); setPreview("");
   };
 
-  const update = (key: keyof ProductAIExtraction, value: string | number) =>
+  const update = (key: keyof ProductAIExtraction, value: string | number | undefined) =>
     result && setResult({ ...result, [key]: value });
 
   const save = () => {
@@ -317,6 +341,7 @@ export default function AdminScanPage() {
         unit: result.suggestedUnit,
         lowStockThreshold: activeStore?.lowStockThreshold ?? 3,
         price: result.suggestedPrice,
+        imageUrl: capturedThumb ?? undefined,
         source: "ai_scan",
         aiConfidence: result.confidence,
         status: "active",
@@ -332,7 +357,7 @@ export default function AdminScanPage() {
     : "#A4B4CC";
   const confidenceText = result ? confidenceLabel(result.confidence) : "";
 
-  const resetScan = () => { setResult(null); setOriginal(null); setFile(null); setPreview(""); setError(""); };
+  const resetScan = () => { setResult(null); setOriginal(null); setFile(null); setPreview(""); setError(""); setCapturedThumb(null); };
 
   const switchMode = (m: Mode) => {
     closeCamera();
@@ -340,6 +365,7 @@ export default function AdminScanPage() {
     setResult(null); setError("");
     setFile(null); setPreview("");
     setReceiptRows([]); setReceiptSummary("");
+    setCapturedThumb(null);
   };
 
   const checkedCount = receiptRows.filter((r) => r.checked).length;
@@ -631,8 +657,8 @@ export default function AdminScanPage() {
                       onChange={(e) => setReceiptRows((rows) => rows.map((r) => ({ ...r, checked: e.target.checked })))}
                     />
                   </th>
-                  {["Product", "Category", "Qty", "Price (₹)", "Conf."].map((h) => (
-                    <th key={h} style={{ textAlign: h === "Qty" || h === "Price (₹)" || h === "Conf." ? "right" : "left", padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>
+                  {["Product", "Category", "Qty", "Price (€)", "Conf."].map((h) => (
+                    <th key={h} style={{ textAlign: h === "Qty" || h === "Price (€)" || h === "Conf." ? "right" : "left", padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>
                       {h}
                     </th>
                   ))}
@@ -770,8 +796,8 @@ export default function AdminScanPage() {
               <textarea className="textarea" value={result.description} onChange={(e) => update("description", e.target.value)} style={{ minHeight: 80 }} />
             </div>
             <div>
-              <label className="label">Price (₹)</label>
-              <input className="input" type="number" min="0" value={result.suggestedPrice ?? ""} onChange={(e) => update("suggestedPrice", parseFloat(e.target.value))} placeholder="Enter price" />
+              <label className="label">Price (€)</label>
+              <input className="input" type="number" min="0" value={result.suggestedPrice ?? ""} onChange={(e) => { const val = e.target.value; update("suggestedPrice", val === "" ? undefined : parseFloat(val)); }} placeholder="Enter price" />
             </div>
             <div>
               <label className="label">Unit</label>
@@ -781,7 +807,7 @@ export default function AdminScanPage() {
             </div>
             <div>
               <label className="label">Opening stock</label>
-              <input className="input" type="number" min="1" value={result.suggestedQuantity} onChange={(e) => update("suggestedQuantity", parseInt(e.target.value))} />
+              <input className="input" type="number" min="1" value={result.suggestedQuantity} onChange={(e) => { const val = e.target.value; update("suggestedQuantity", val === "" ? 1 : parseInt(val)); }} />
             </div>
           </div>
 

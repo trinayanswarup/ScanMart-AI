@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ShieldCheck, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShieldCheck, User } from "lucide-react";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -54,6 +55,10 @@ export default function AuthPage() {
       {/* Right panel - Login */}
       <section style={{ padding: 30, display: "grid", placeItems: "center" }}>
         <div style={{ width: "100%", maxWidth: 380 }}>
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "var(--muted)", textDecoration: "none", marginBottom: 28 }}>
+            <ArrowLeft size={13} /> Back to home
+          </Link>
+
           <div style={{ textAlign: "center", marginBottom: 32 }}>
             <div style={{ width: 56, height: 56, background: "var(--canvas)", border: "1px solid var(--line)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: "var(--ink)" }}>
               <User size={24} />
@@ -113,6 +118,12 @@ export default function AuthPage() {
           >
             Enter Demo Workspace
           </button>
+
+          <div style={{ textAlign: "center", marginTop: 20 }}>
+            <Link href="/shop" style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>
+              Browse stores as a shopper →
+            </Link>
+          </div>
         </div>
       </section>
 

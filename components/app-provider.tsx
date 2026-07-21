@@ -51,7 +51,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (!hydrated) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      let totalChars = 0;
+      for (const key of Object.keys(localStorage)) {
+        totalChars += key.length + (localStorage.getItem(key) ?? "").length;
+      }
+      // Each JS string character is 2 bytes in localStorage (UTF-16).
+      // Warn well before the typical 5-10 MB browser limit.
+      if (totalChars * 2 > 4 * 1024 * 1024) {
+        console.warn(
+          `[ScanMart] localStorage ~${(totalChars * 2 / 1024 / 1024).toFixed(1)} MB — approaching the browser limit. ` +
+          "Images may fail to save. Consider archiving items or resetting demo data (Settings → Reset demo).",
+        );
+      }
+    } catch { /* ignore storage-access errors in restricted environments */ }
   }, [hydrated, state]);
 
   const getStore = useCallback((id: string) => state.stores.find((s) => s.id === id), [state.stores]);
@@ -70,7 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...current,
         inventory: [inventoryItem, ...current.inventory],
         listings: item.source === "ai_scan"
-          ? [{ id: listingId, businessId: storeId, inventoryItemId: id, title: item.name, description: item.description, price: item.price ?? 0, isPublished: false }, ...current.listings]
+          ? [{ id: listingId, businessId: storeId, inventoryItemId: id, title: item.name, description: item.description, price: item.price ?? 0, imageUrl: item.imageUrl, isPublished: false }, ...current.listings]
           : current.listings,
         corrections: original && corrected && JSON.stringify(original) !== JSON.stringify(corrected)
           ? [{ id: makeId("correction"), inventoryItemId: id, original, corrected, createdAt: new Date().toISOString() }, ...current.corrections]

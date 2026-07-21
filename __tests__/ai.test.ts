@@ -83,15 +83,47 @@ describe("lookupBarcode", () => {
 
     const result = await lookupBarcode("8076800195057");
     expect(result).not.toBeNull();
-    expect(result?.productName).toBe("Barilla Spaghetti No. 5");
-    expect(result?.brand).toBe("Barilla"); // first brand only, trimmed
+    expect(result?.extraction.productName).toBe("Barilla Spaghetti No. 5");
+    expect(result?.extraction.brand).toBe("Barilla"); // first brand only, trimmed
     // first tag: "en:dry-pastas" → "dry-pastas" → "dry pastas" → "Dry pastas"
-    expect(result?.category).toBe("Dry pastas");
-    expect(result?.confidence).toBe(0.92);
-    expect(result?.suggestedUnit).toBe("pcs");
-    expect(result?.detectedText).toContain("8076800195057");
-    expect(result?.detectedText).toContain("Barilla Spaghetti No. 5");
-    expect(result?.detectedText).toContain("Barilla");
+    expect(result?.extraction.category).toBe("Dry pastas");
+    expect(result?.extraction.confidence).toBe(0.92);
+    expect(result?.extraction.suggestedUnit).toBe("pcs");
+    expect(result?.extraction.detectedText).toContain("8076800195057");
+    expect(result?.extraction.detectedText).toContain("Barilla Spaghetti No. 5");
+    expect(result?.extraction.detectedText).toContain("Barilla");
+    expect(result?.imageUrl).toBeUndefined(); // no image_url in this fixture
+  });
+
+  it("picks up image_front_url when present", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValueOnce({
+      json: async () => ({
+        status: 1,
+        product: {
+          product_name: "Test Product",
+          image_front_url: "https://images.openfoodfacts.org/test.jpg",
+          image_url: "https://images.openfoodfacts.org/fallback.jpg",
+        },
+      }),
+    } as Response);
+
+    const result = await lookupBarcode("1234000000001");
+    expect(result?.imageUrl).toBe("https://images.openfoodfacts.org/test.jpg");
+  });
+
+  it("falls back to image_url when image_front_url is absent", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValueOnce({
+      json: async () => ({
+        status: 1,
+        product: {
+          product_name: "Test Product",
+          image_url: "https://images.openfoodfacts.org/fallback.jpg",
+        },
+      }),
+    } as Response);
+
+    const result = await lookupBarcode("1234000000002");
+    expect(result?.imageUrl).toBe("https://images.openfoodfacts.org/fallback.jpg");
   });
 
   it("uses generic_name as fallback when product_name is absent", async () => {
@@ -107,6 +139,6 @@ describe("lookupBarcode", () => {
 
     const result = await lookupBarcode("5000000000000");
     expect(result).not.toBeNull();
-    expect(result?.productName).toBe("Table Salt");
+    expect(result?.extraction.productName).toBe("Table Salt");
   });
 });

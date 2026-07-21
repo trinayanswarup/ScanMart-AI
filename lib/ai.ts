@@ -47,7 +47,7 @@ export function confidenceLabel(confidence: number) {
 
 // — Open Food Facts barcode lookup ——————————————————————————————————————————
 
-export async function lookupBarcode(barcode: string): Promise<ProductAIExtraction | null> {
+export async function lookupBarcode(barcode: string): Promise<{ extraction: ProductAIExtraction; imageUrl?: string } | null> {
   try {
     const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
     const data = await res.json() as {
@@ -58,6 +58,8 @@ export async function lookupBarcode(barcode: string): Promise<ProductAIExtractio
         categories_tags?: string[];
         generic_name?: string;
         quantity?: string;
+        image_front_url?: string;
+        image_url?: string;
       };
     };
     if (data.status !== 1 || !data.product) return null;
@@ -67,8 +69,9 @@ export async function lookupBarcode(barcode: string): Promise<ProductAIExtractio
     const brand = p.brands?.split(",")[0]?.trim();
     const rawCategory = p.categories_tags?.[0]?.replace("en:", "").replace(/-/g, " ") ?? "Other";
     const category = rawCategory.charAt(0).toUpperCase() + rawCategory.slice(1);
+    const imageUrl = p.image_front_url || p.image_url || undefined;
 
-    return productAIExtractionSchema.parse({
+    const extraction = productAIExtractionSchema.parse({
       productName: productName.slice(0, 70),
       brand,
       category,
@@ -80,6 +83,7 @@ export async function lookupBarcode(barcode: string): Promise<ProductAIExtractio
       detectedText: [barcode, productName, brand ?? ""].filter(Boolean),
       reasoningShort: `Barcode ${barcode} matched Open Food Facts database with high confidence.`,
     });
+    return { extraction, imageUrl };
   } catch {
     return null;
   }
