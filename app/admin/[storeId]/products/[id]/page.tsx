@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Bot, CheckCircle2, Edit3, Save, Store } from "lucide-react";
+import { ArrowLeft, Bot, CheckCircle2, Edit3, LoaderCircle, Save, Store } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 
 export default function AdminProductDetailPage() {
@@ -18,6 +18,7 @@ export default function AdminProductDetailPage() {
   
   const [listingForm, setListingForm] = useState({ title: "", description: "", price: "" });
   const [listingMessage, setListingMessage] = useState("");
+  const [saving, setSaving] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -34,21 +35,21 @@ export default function AdminProductDetailPage() {
   if (!item && isClient) return <div className="page-wrap"><div className="empty"><h2>Product not found</h2><Link href={`/admin/${storeId}/inventory`} className="btn btn-primary">Back to inventory</Link></div></div>;
   if (!item) return null;
 
-  const submitListing = () => {
-    const result = saveListing(item.id, {
+  const submitListing = async () => {
+    setSaving(true);
+    const result = await saveListing(item.id, {
       title: listingForm.title,
       description: listingForm.description,
       price: Number(listingForm.price),
     });
-    
+
     if (result.ok) {
       router.push(`/admin/${storeId}/inventory`);
-    } else {
-      setListingMessage(result.message);
-      setTimeout(() => {
-        setListingMessage("");
-      }, 3000);
+      return; // keep saving=true; page unmounts on navigation
     }
+    setListingMessage(result.message);
+    setTimeout(() => setListingMessage(""), 3000);
+    setSaving(false);
   };
 
   return (
@@ -173,9 +174,12 @@ export default function AdminProductDetailPage() {
             {listingMessage}
           </span>
         )}
-        <button className="btn btn-primary shadow-glow" onClick={submitListing} style={{ minHeight: 44, padding: "0 24px", fontSize: 15 }}>
-          <Save size={16} /> Save & publish
+        <button className="btn btn-primary shadow-glow" onClick={submitListing} disabled={saving} style={{ minHeight: 44, padding: "0 24px", fontSize: 15, opacity: saving ? 0.7 : 1 }}>
+          {saving
+            ? <><LoaderCircle size={16} style={{ animation: "prod-spin 1s linear infinite" }} />Saving…</>
+            : <><Save size={16} /> Save & publish</>}
         </button>
+        <style>{`@keyframes prod-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   );

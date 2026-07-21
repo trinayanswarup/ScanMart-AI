@@ -42,7 +42,7 @@ function ProductImage({ src, alt, seed }: { src?: string; alt: string; seed: str
 
 export default function ShopStorefrontPage() {
   const { storeSlug } = useParams<{ storeSlug: string }>();
-  const { state, addToCart, setCartQuantity } = useApp();
+  const { state, addToCart, setCartQuantity, setCurrentStoreId, storeDataLoading } = useApp();
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [drawer, setDrawer] = useState(false);
@@ -51,6 +51,13 @@ export default function ShopStorefrontPage() {
   useEffect(() => { setIsClient(true); }, []);
 
   const store = state.stores.find((s) => s.slug === storeSlug);
+  const storeId = store?.id;
+
+  // Trigger lazy load for this store if its data isn't cached yet.
+  useEffect(() => {
+    if (storeId) setCurrentStoreId(storeId);
+  }, [storeId, setCurrentStoreId]);
+
   if (!store && isClient) return <div className="empty"><h2>Store not found</h2><Link href="/shop" className="btn btn-primary">Browse stores</Link></div>;
   if (!store) return null; // Wait for hydration
 
@@ -63,8 +70,9 @@ export default function ShopStorefrontPage() {
     return listing.isPublished && item && item.quantity > 0 && (category === "All" || item.category === category) && listing.title.toLowerCase().includes(search.toLowerCase());
   }), [storeListings, storeInv, category, search]);
 
-  const storeCart = state.cart.filter((c) => c.storeId === store.id);
-  const total = storeCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Use the full cart across all stores — customers accumulate items from multiple stores.
+  const cart = state.cart;
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
     <header className="glass" style={{ height: 72, maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 40 }}>
@@ -73,9 +81,9 @@ export default function ShopStorefrontPage() {
         <Link href="/shop" style={{ fontSize: 14, fontWeight: 600, color: "var(--muted)" }}>All stores</Link>
         <button onClick={() => setDrawer(true)} className="btn btn-primary shadow-glow" style={{ position: "relative" }}>
           <ShoppingBag size={16} /> Cart
-          {storeCart.length > 0 && (
+          {cart.length > 0 && (
             <span style={{ position: "absolute", top: -6, right: -6, background: "var(--danger)", color: "white", width: 20, height: 20, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 800, border: "2px solid var(--surface)" }}>
-              {storeCart.reduce((sum, item) => sum + item.quantity, 0)}
+              {cart.reduce((sum, item) => sum + item.quantity, 0)}
             </span>
           )}
         </button>
@@ -119,9 +127,15 @@ export default function ShopStorefrontPage() {
         <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>{products.length} items available</p>
       </div>
       
-      {products.length ? <div className="grid-4 animate-slide-up delay-300">
-        {products.map((listing, index) => { 
-          const item = storeInv.find((entry) => entry.id === listing.inventoryItemId)!; 
+      {storeDataLoading ? (
+        <div className="card shadow-soft empty animate-slide-up" style={{ padding: "60px 0" }}>
+          <div style={{ width: 32, height: 32, border: "3px solid var(--line)", borderTopColor: "var(--brand)", borderRadius: "50%", animation: "shop-spin 0.75s linear infinite", margin: "0 auto 16px" }} />
+          <style>{`@keyframes shop-spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>Loading products…</p>
+        </div>
+      ) : products.length ? <div className="grid-4 animate-slide-up delay-300">
+        {products.map((listing) => {
+          const item = storeInv.find((entry) => entry.id === listing.inventoryItemId)!;
           return (
             <article className="card shadow-soft" key={listing.id} style={{ display: "flex", flexDirection: "column", overflow: "hidden", transition: "all .2s cubic-bezier(0.16, 1, 0.3, 1)" }}
                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 20px 40px rgba(4, 26, 21, 0.08)"; }}
@@ -158,12 +172,12 @@ export default function ShopStorefrontPage() {
       <button className="animate-fade-in" style={{ position: "absolute", inset: 0, background: "rgba(4, 26, 21, 0.4)", backdropFilter: "blur(4px)", border: 0 }} onClick={() => setDrawer(false)} />
       <aside className="animate-slide-up" style={{ position: "relative", width: "100%", maxWidth: 440, background: "var(--canvas)", display: "flex", flexDirection: "column", boxShadow: "-20px 0 50px rgba(4, 26, 21, 0.15)", height: "100%" }}>
         <div className="glass" style={{ padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
-          <div><h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--ink)" }}>Your Cart</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>{storeCart.reduce((sum, item) => sum + item.quantity, 0)} items</span></div>
+          <div><h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "var(--ink)" }}>Your Cart</h2><span style={{ fontSize: 13, color: "var(--muted)" }}>{cart.reduce((sum, item) => sum + item.quantity, 0)} items</span></div>
           <button style={{ border: 0, background: "white", borderRadius: 8, width: 40, height: 40, display: "grid", placeItems: "center", color: "var(--muted)", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }} onClick={() => setDrawer(false)}><X size={20} /></button>
         </div>
         
         <div style={{ padding: "24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
-          {storeCart.length ? storeCart.map((cartItem) => (
+          {cart.length ? cart.map((cartItem) => (
             <div className="card shadow-soft" key={cartItem.listingId} style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: 16, padding: 16, alignItems: "center" }}>
               <div style={{ width: 70, height: 70, borderRadius: 8, background: "var(--brand-soft)", display: "grid", placeItems: "center", color: "var(--brand)", fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
                 {cartItem.imageUrl
@@ -176,7 +190,7 @@ export default function ShopStorefrontPage() {
                    <strong style={{ fontSize: 15, color: "var(--ink)" }}>€{cartItem.price * cartItem.quantity}</strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                   <span style={{ fontSize: 12, color: "var(--muted)" }}>€{cartItem.price} each</span>
+                   <span style={{ fontSize: 12, color: "var(--muted)" }}>€{cartItem.price} each · {cartItem.storeName}</span>
                    <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--line)", borderRadius: 6, background: "white" }}>
                       <button style={{ border: 0, background: "transparent", width: 28, height: 28, display: "grid", placeItems: "center", color: "var(--muted)" }} onClick={() => setCartQuantity(cartItem.listingId, cartItem.quantity - 1)}><Minus size={12} /></button>
                       <b style={{ width: 28, height: 28, display: "grid", placeItems: "center", fontSize: 12, background: "var(--brand-soft)", color: "var(--ink)" }}>{cartItem.quantity}</b>
@@ -188,7 +202,7 @@ export default function ShopStorefrontPage() {
           )) : <div className="empty" style={{ paddingTop: 60 }}><ShoppingBag size={40} color="var(--brand)" style={{ opacity: 0.2, margin: "0 auto 16px" }} /><p style={{ fontSize: 16, color: "var(--ink)", fontWeight: 600 }}>Your cart is empty.</p></div>}
         </div>
         
-        {storeCart.length > 0 && (
+        {cart.length > 0 && (
           <div className="glass" style={{ borderTop: "1px solid var(--line)", padding: "24px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <span style={{ fontSize: 15, color: "var(--muted)", fontWeight: 600 }}>Subtotal</span>

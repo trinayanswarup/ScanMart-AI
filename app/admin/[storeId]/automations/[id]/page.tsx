@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock3, Code, Play, X, Zap, Activity } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock3, Code, LoaderCircle, Play, X, Zap, Activity } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useApp } from "@/components/app-provider";
@@ -72,6 +72,7 @@ export default function AdminAutomationDetailPage() {
   const { state, approveWorkflowExecution } = useApp();
   const [devMode, setDevMode] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const [approving, setApproving] = useState(false);
   
   const workflow = state.workflows.find((item) => item.id === id);
   const executions = state.executions.filter((item) => item.workflowId === id);
@@ -130,12 +131,17 @@ export default function AdminAutomationDetailPage() {
                     <strong style={{ fontSize: 16, color: "var(--brand)", display: "block", marginBottom: 6 }}>Action required</strong>
                     <p style={{ margin: 0, color: "var(--ink)", fontSize: 14, lineHeight: 1.5 }}>Review the draft listing, then approve it to publish the product.</p>
                   </div>
-                  <button className="btn btn-primary shadow-glow" style={{ whiteSpace: "nowrap" }} onClick={() => { 
-                    const result = approveWorkflowExecution(selected.id); 
-                    setActionMessage(result.message); 
+                  <button className="btn btn-primary shadow-glow" style={{ whiteSpace: "nowrap", opacity: approving ? 0.7 : 1 }} disabled={approving} onClick={async () => {
+                    setApproving(true);
+                    const result = await approveWorkflowExecution(selected.id);
+                    setActionMessage(result.message);
+                    setApproving(false);
                   }}>
-                    <CheckCircle2 size={16} /> Approve & publish
+                    {approving
+                      ? <><LoaderCircle size={16} style={{ animation: "approve-spin 1s linear infinite" }} />Approving…</>
+                      : <><CheckCircle2 size={16} /> Approve & publish</>}
                   </button>
+                  <style>{`@keyframes approve-spin { to { transform: rotate(360deg); } }`}</style>
                 </div>
               )}
               

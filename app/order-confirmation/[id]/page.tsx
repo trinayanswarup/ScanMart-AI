@@ -18,7 +18,7 @@ export default function ConfirmationPage() {
       <p className="muted" style={{ lineHeight: 1.7 }}>The seller will confirm your order. Payment is handled at pickup or by cash on delivery.</p>
       <div className="subtle-card" style={{ padding: 16, margin: "22px 0", display: "flex", justifyContent: "space-between" }}>
         <span>Order reference</span>
-        <strong>#{id.split("_").slice(-1)[0]?.toUpperCase()}</strong>
+        <strong>#{(id.split("_").slice(-1)[0] ?? id).toUpperCase().slice(0, 8)}</strong>
       </div>
       <Link href={orderStore ? `/shop/${orderStore.slug}` : "/shop"} className="btn btn-primary">Back to storefront</Link>
     </div>

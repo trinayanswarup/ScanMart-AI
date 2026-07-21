@@ -35,10 +35,8 @@ app = FastAPI(title="ScanMart AI API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://scan-mart-ai.vercel.app",  # replace with your production Vercel URL
-    ],
+    allow_origin_regex=r"http://localhost:\d+",
+    allow_origins=["https://scan-mart-ai.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

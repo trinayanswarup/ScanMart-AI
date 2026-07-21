@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, LogOut } from "lucide-react";
 import { useApp } from "@/components/app-provider";
@@ -8,8 +9,10 @@ import { useApp } from "@/components/app-provider";
 const storeIcons: Record<string, string> = { salon: "✂️", cafe: "☕", grocery: "🛒" };
 
 export default function AdminHome() {
-  const { state } = useApp();
+  const { state, loadAllStores, storeDataLoading } = useApp();
   const router = useRouter();
+
+  useEffect(() => { void loadAllStores(); }, [loadAllStores]);
 
   return (
     <div className="page-wrap" style={{ maxWidth: 900 }}>
@@ -43,8 +46,8 @@ export default function AdminHome() {
               <div style={{ fontWeight: 700, fontSize: 16 }}>{store.name}</div>
               <div className="muted" style={{ fontSize: 12, marginTop: 4, textTransform: "capitalize" }}>{store.businessType}</div>
               <div style={{ display: "flex", gap: 14, marginTop: 14 }}>
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>{itemCount} products</span>
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>{orderCount} orders</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>{storeDataLoading ? "—" : `${itemCount} products`}</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>{storeDataLoading ? "—" : `${orderCount} orders`}</span>
               </div>
             </Link>
           );

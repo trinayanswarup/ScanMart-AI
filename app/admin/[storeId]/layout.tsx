@@ -9,7 +9,12 @@ import { useState, useRef, useEffect } from "react";
 
 export default function AdminStoreLayout({ children }: { children: React.ReactNode }) {
   const { storeId } = useParams<{ storeId: string }>();
-  const { state, getStoreOrders } = useApp();
+  const { state, getStoreOrders, setCurrentStoreId, storeDataLoading } = useApp();
+
+  // Tell the provider which store is active so it can lazy-load its data if not yet cached.
+  useEffect(() => {
+    setCurrentStoreId(storeId);
+  }, [storeId, setCurrentStoreId]);
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
@@ -194,7 +199,13 @@ export default function AdminStoreLayout({ children }: { children: React.ReactNo
         </header>
 
         {/* Page Content */}
-        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative" }}>
+          {storeDataLoading && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, zIndex: 50, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: "var(--brand)", animation: "store-load-slide 1.4s ease-in-out infinite" }} />
+              <style>{`@keyframes store-load-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
+            </div>
+          )}
           {children}
         </div>
       </main>

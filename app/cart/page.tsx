@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Search, ShieldCheck, ShoppingBag, Plus, Minus, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LoaderCircle, Search, ShieldCheck, ShoppingBag, Plus, Minus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
@@ -13,6 +13,7 @@ export default function CartPage() {
   const router = useRouter();
   const [form, setForm] = useState({ customerName: "", customerPhone: "", customerEmail: "" });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const details = state.cart;
   const total = details.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -21,14 +22,35 @@ export default function CartPage() {
     ? state.stores.find((s) => s.id === state.cart[0].storeId)
     : state.stores[0];
 
-  const checkout = () => {
+  const checkout = async () => {
     const parsed = checkoutSchema.safeParse(form);
     if (!parsed.success) { setError(parsed.error.issues[0]?.message || "Check your details."); return; }
-    const ids = placeOrder(parsed.data);
-    if (ids.length > 0) router.push(`/order-confirmation/${ids[0]}`);
+    setSubmitting(true);
+    setError("");
+    try {
+      const ids = await placeOrder(parsed.data);
+      if (ids.length > 0) {
+        router.push(`/order-confirmation/${ids[0]}`);
+        // Keep submitting=true — the overlay holds until the page unmounts on navigation.
+        return;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to place order. Please try again.");
+      setSubmitting(false);
+    }
   };
 
   return <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
+    {/* Full-page overlay while order is being placed — prevents empty-cart flash */}
+    {submitting && (
+      <div style={{ position: "fixed", inset: 0, background: "var(--canvas)", display: "grid", placeItems: "center", zIndex: 100 }}>
+        <div style={{ textAlign: "center" }}>
+          <LoaderCircle size={40} color="var(--brand)" style={{ animation: "cart-spin 1s linear infinite" }} />
+          <style>{`@keyframes cart-spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ marginTop: 16, color: "var(--muted)", fontSize: 15, fontWeight: 600 }}>Placing your order…</p>
+        </div>
+      </div>
+    )}
     <header className="glass" style={{ height: 74, padding: "0 24px", maxWidth: 1200, margin: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 40 }}>
       <Logo />
       <Link href={shoppingStore ? `/shop/${shoppingStore.slug}` : "/shop"} className="btn btn-ghost"><ArrowLeft size={16} />Continue shopping</Link>
@@ -105,8 +127,10 @@ export default function CartPage() {
             
             {error && <div className="error-text" style={{ textAlign: "center", marginTop: 16 }}>{error}</div>}
             
-            <button className="btn btn-primary shadow-glow" style={{ width: "100%", marginTop: 20, minHeight: 52, fontSize: 16, borderRadius: 8 }} onClick={checkout}>
-              <CheckCircle2 size={18} /> Confirm Order Request
+            <button className="btn btn-primary shadow-glow" style={{ width: "100%", marginTop: 20, minHeight: 52, fontSize: 16, borderRadius: 8, opacity: submitting ? 0.7 : 1 }} onClick={checkout} disabled={submitting}>
+              {submitting
+                ? <><LoaderCircle size={18} style={{ animation: "cart-spin 1s linear infinite" }} /> Placing order…</>
+                : <><CheckCircle2 size={18} /> Confirm Order Request</>}
             </button>
           </aside>
         </div>

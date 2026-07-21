@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingBag, Store } from "lucide-react";
+import { ShoppingBag, Store } from "lucide-react";
 import { useApp } from "@/components/app-provider";
 import { Logo } from "@/components/logo";
+import { useEffect } from "react";
 
 const getStoreGradient = (type: string) => {
   if (type === "salon") return "linear-gradient(135deg, #1E293B, #0F172A)";
@@ -13,7 +14,10 @@ const getStoreGradient = (type: string) => {
 };
 
 export default function ShopIndexPage() {
-  const { state } = useApp();
+  const { state, loadAllStores, storeDataLoading } = useApp();
+
+  // Load every store's data so product counts are accurate even on a fresh visit.
+  useEffect(() => { void loadAllStores(); }, [loadAllStores]);
   
   const totalCartItems = state.cart.reduce((s, i) => s + i.quantity, 0);
 
@@ -55,7 +59,7 @@ export default function ShopIndexPage() {
                 </div>
                 <div style={{ padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "white" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)", fontSize: 13, fontWeight: 600 }}>
-                    <ShoppingBag size={14} /> {listings.length} products
+                    <ShoppingBag size={14} /> {storeDataLoading ? "—" : `${listings.length} products`}
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand)" }}>Shop now &rarr;</span>
                 </div>

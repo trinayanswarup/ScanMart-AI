@@ -120,6 +120,7 @@ export default function AdminScanPage() {
   const [result, setResult] = useState<ProductAIExtraction | null>(null);
   const [error, setError] = useState("");
   const [usedAI, setUsedAI] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Receipt-specific state
   const [receiptRows, setReceiptRows] = useState<ReceiptRow[]>([]);
@@ -306,50 +307,61 @@ export default function AdminScanPage() {
   const updateReceiptRow = (i: number, patch: Partial<ReceiptRow>) =>
     setReceiptRows((rows) => rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
 
-  const saveReceipt = () => {
+  const saveReceipt = async () => {
     const toSave = receiptRows.filter((r) => r.checked && r.productName.trim());
     if (!toSave.length) { setError("Select at least one item to add."); return; }
-    addInventoryBulk(storeId, toSave.map((r) => ({
-      name: r.productName.trim(),
-      category: r.category.trim() || "Other",
-      quantity: r.quantity,
-      price: r.unitPrice,
-    })));
-    const count = toSave.length;
-    setReceiptSummary(`${count} item${count === 1 ? "" : "s"} added to inventory.`);
-    setReceiptRows([]);
-    setFile(null); setPreview("");
+    setLoading(true);
+    try {
+      const count = await addInventoryBulk(storeId, toSave.map((r) => ({
+        name: r.productName.trim(),
+        category: r.category.trim() || "Other",
+        quantity: r.quantity,
+        price: r.unitPrice,
+      })));
+      setReceiptSummary(`${count} item${count === 1 ? "" : "s"} added to inventory.`);
+      setReceiptRows([]);
+      setFile(null); setPreview("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save items.");
+    }
+    setLoading(false);
   };
 
   const update = (key: keyof ProductAIExtraction, value: string | number | undefined) =>
     result && setResult({ ...result, [key]: value });
 
-  const save = () => {
-    if (!result || !original) return;
+  const save = async () => {
+    if (!result || !original || saving) return;
     if (result.confidence < 0.6 && result.productName === "Unknown Product") {
       setError('Low-confidence scans require you to replace "Unknown Product" with the real product name.');
       return;
     }
-    const id = addInventory(
-      storeId,
-      {
-        name: result.productName,
-        brand: result.brand,
-        category: result.category,
-        description: result.description,
-        quantity: result.suggestedQuantity,
-        unit: result.suggestedUnit,
-        lowStockThreshold: activeStore?.lowStockThreshold ?? 3,
-        price: result.suggestedPrice,
-        imageUrl: capturedThumb ?? undefined,
-        source: "ai_scan",
-        aiConfidence: result.confidence,
-        status: "active",
-      },
-      original,
-      result,
-    );
-    router.push(`/admin/${storeId}/products/${id}`);
+    setSaving(true);
+    try {
+      const id = await addInventory(
+        storeId,
+        {
+          name: result.productName,
+          brand: result.brand,
+          category: result.category,
+          description: result.description,
+          quantity: result.suggestedQuantity,
+          unit: result.suggestedUnit,
+          lowStockThreshold: activeStore?.lowStockThreshold ?? 3,
+          price: result.suggestedPrice,
+          imageUrl: capturedThumb ?? undefined,
+          source: "ai_scan",
+          aiConfidence: result.confidence,
+          status: "active",
+        },
+        original,
+        result,
+      );
+      router.push(`/admin/${storeId}/products/${id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save. Check the backend connection.");
+      setSaving(false);
+    }
   };
 
   const confidenceColor = result
@@ -825,10 +837,12 @@ export default function AdminScanPage() {
           {error && <p style={{ color: "#F85458", fontSize: 13, marginTop: 12 }}>{error}</p>}
 
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            <button className="btn btn-primary" style={{ flex: 1, minHeight: 46 }} onClick={save}>
-              <CheckCircle2 size={16} /> Save to inventory
+            <button className="btn btn-primary" style={{ flex: 1, minHeight: 46 }} onClick={save} disabled={saving}>
+              {saving
+                ? <><LoaderCircle size={16} style={{ animation: "spin 1s linear infinite" }} />Saving…</>
+                : <><CheckCircle2 size={16} /> Save to inventory</>}
             </button>
-            <button className="btn btn-secondary" onClick={resetScan}>
+            <button className="btn btn-secondary" onClick={resetScan} disabled={saving}>
               <RefreshCw size={15} /> Scan again
             </button>
           </div>
