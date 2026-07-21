@@ -35,7 +35,7 @@ interface AppContextValue {
   updateOrderStatus: (id: string, status: Order["status"]) => Promise<{ ok: boolean; message?: string }>;
   approveWorkflowExecution: (executionId: string) => Promise<{ ok: boolean; message: string }>;
   updateBusiness: (storeId: string, patch: Partial<Business>) => void;
-  resetDemo: () => void;
+  resetDemo: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -553,8 +553,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  // Clears the store cache and re-runs the initial load from the API.
-  const resetDemo = useCallback(() => {
+  // Calls the backend reset endpoint, then clears the cache and re-fetches all data.
+  const resetDemo = useCallback(async () => {
+    await apiFetch("/reset", { method: "POST" });
+    loadedStoreIdsRef.current.clear();
     setLoadKey(k => k + 1);
   }, []);
 
