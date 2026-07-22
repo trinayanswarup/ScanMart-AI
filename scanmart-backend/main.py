@@ -404,7 +404,7 @@ async def _seed_demo_data(conn: asyncpg.Connection) -> None:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def health_check():
     return {"status": "ok"}
 
