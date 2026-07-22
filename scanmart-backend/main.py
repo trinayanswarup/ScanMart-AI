@@ -35,7 +35,7 @@ app = FastAPI(title="ScanMart AI API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://scan-mart-ai\.vercel\.app|http://localhost:\d+",
+    allow_origin_regex=r"https://scanmart-ai\.vercel\.app|http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
