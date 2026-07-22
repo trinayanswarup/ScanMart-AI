@@ -404,6 +404,11 @@ async def _seed_demo_data(conn: asyncpg.Connection) -> None:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+@app.get("/")
+def health_check():
+    return {"status": "ok"}
+
+
 @app.get("/company")
 async def get_company():
     pool = await get_pool()
